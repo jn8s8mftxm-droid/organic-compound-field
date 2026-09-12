@@ -810,7 +810,6 @@ function renderTree(){document.getElementById('tree-done').innerText=treeDoneCou
 
 function assignStarterDeck(type){
   gameState.currentDeck=[];gameState.collection=[];gameState.deckListOrder=[];returnToMenu=false;returnToBossPrep=false;
-  gameState.playerLevel=1;gameState.playerExp=0;gameState.lastRank:'初学者';gameState.recipes={};
   gameState.playerLevel=1;gameState.playerExp=0;gameState.lastRank='初学者';gameState.recipes={};
   var names=type==='Aromatic'?['ベンゼン','トルエン','濃硝酸','濃硫酸','フェノール','グルコース','ニトロ基']:type==='Polymer'?['エチレン','臭素','塩素','重合触媒(Ziegler)','グルコース','エタノール']:['エタノール','酢酸','水酸化ナトリウム','過マンガン酸カリウム','グルコース','アセトアルデヒド'];
   var base=[];for(var i=0;i<names.length;i++){var c=ALL_CARDS.find(function(x){return x.name===names[i];});if(c)base.push(c);}
