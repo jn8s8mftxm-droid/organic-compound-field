@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>夜の選択 — Adult Demo</title>
+<style>
+  :root {
+    --bg: #0c0a09;
+    --card: #1c1917;
+    --accent: #f43f5e;
+    --accent2: #fb7185;
+    --text: #fafaf9;
+    --muted: #a8a29e;
+    --soft: #44403c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif;
+    background: radial-gradient(ellipse at top, #1c1917 0%, #0c0a09 70%);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+  .container {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 20px 16px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  /* Title */
+  .title-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 24px;
+  }
+  .logo {
+    font-size: 2.2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #f43f5e, #fb7185, #fda4af);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 2px;
+  }
+  .tagline {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .start-btn {
+    margin-top: 20px;
+    padding: 16px 48px;
+    background: linear-gradient(135deg, #f43f5e, #e11d48);
+    border: none;
+    border-radius: 50px;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s;
+    box-shadow: 0 8px 24px rgba(244, 63, 94, 0.35);
+  }
+  .start-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(244, 63, 94, 0.45);
+  }
+  /* Game UI */
+  .screen { display: none; flex: 1; flex-direction: column; }
+  .screen.active { display: flex; }
+  .status-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .stat {
+    flex: 1;
+    background: var(--card);
+    border-radius: 12px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .stat-label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .stat-bar {
+    height: 6px;
+    background: var(--soft);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .stat-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+  .fill-affection { background: linear-gradient(90deg, #fb7185, #f43f5e); }
+  .fill-arousal { background: linear-gradient(90deg, #f97316, #ef4444); }
+  .stat-value {
+    font-size: 0.75rem;
+    color: var(--text);
+    margin-top: 3px;
+    text-align: right;
+  }
+  .scene-card {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 24px 20px;
+    border: 1px solid rgba(255,255,255,0.06);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .scene-text {
+    font-size: 1.02rem;
+    line-height: 1.75;
+    white-space: pre-wrap;
+    flex: 1;
+  }
+  .scene-text .name {
+    color: var(--accent2);
+    font-weight: 600;
+  }
+  .choices {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .choice-btn {
+    background: rgba(28, 25, 23, 0.8);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 14px 16px;
+    color: var(--text);
+    font-size: 0.95rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .choice-btn:hover {
+    border-color: var(--accent);
+    background: rgba(244, 63, 94, 0.1);
+    transform: translateX(4px);
+  }
+  .hint {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 12px;
+    text-align: center;
+  }
+  /* Ending */
+  .ending {
+    text-align: center;
+    padding: 40px 20px;
+  }
+  .ending-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--accent2);
+    margin-bottom: 16px;
+  }
+  .ending-text {
+    font-size: 1rem;
+    line-height: 1.7;
+    margin-bottom: 28px;
+    color: #e7e5e4;
+  }
+  .restart-btn {
+    padding: 14px 40px;
+    background: linear-gradient(135deg, #f43f5e, #e11d48);
+    border: none;
+    border-radius: 50px;
+    color: white;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- Title -->
+  <div id="title" class="screen active">
+    <div class="title-screen">
+      <div class="logo">夜の選択</div>
+      <div class="tagline">短い大人のインタラクティブデモ</div>
+      <button class="start-btn" onclick="startGame()">はじめる</button>
+      <div style="font-size:0.75rem;color:var(--muted);margin-top:8px;">
+        18歳以上向け / 選択肢で展開が変わります
+      </div>
+    </div>
+  </div>
+
+  <!-- Game -->
+  <div id="game" class="screen">
+    <div class="status-bar">
+      <div class="stat">
+        <div class="stat-label">好感度</div>
+        <div class="stat-bar"><div class="stat-fill fill-affection" id="affBar" style="width:20%"></div></div>
+        <div class="stat-value" id="affVal">20</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">興奮度</div>
+        <div class="stat-bar"><div class="stat-fill fill-arousal" id="aroBar" style="width:10%"></div></div>
+        <div class="stat-value" id="aroVal">10</div>
+      </div>
+    </div>
+    <div class="scene-card">
+      <div class="scene-text" id="sceneText"></div>
+      <div class="choices" id="choices"></div>
+      <div class="hint" id="hint"></div>
+    </div>
+  </div>
+
+  <!-- Ending -->
+  <div id="ending" class="screen">
+    <div class="ending">
+      <div class="ending-title" id="endTitle"></div>
+      <div class="ending-text" id="endText"></div>
+      <button class="restart-btn" onclick="restart()">もう一度</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const scenes = {
+  start: {
+    text: `深夜のバー。落ち着いたジャズが流れている。\n\nカウンターの端で一人、グラスを傾ける女性がいた。\n黒髪を肩で軽くまとめ、黒いドレスの胸元が柔らかく影を落としている。\n\n彼女がふとこちらを見た。目が合った。`,
+    choices: [
+      { text: "「一人ですか？」と話しかける", next: "talk", aff: 15, aro: 5 },
+      { text: "静かに隣に座るだけで様子を見る", next: "sit", aff: 5, aro: 10 },
+      { text: "目を逸らして別の席に行く", next: "leave", aff: -10, aro: 0 }
+    ]
+  },
+  talk: {
+    text: `「……ええ。仕事帰りで」\n\n彼女は少し驚いたように微笑んだ。声は低く、落ち着いている。\n\n「あなたも？」\n\nグラスの縁に指を這わせながら、こちらを見つめてくる。\n視線が少しだけ熱を帯びている気がした。`,
+    choices: [
+      { text: "「同じですね。今日は少し特別な夜にしたくて」", next: "flirt", aff: 20, aro: 15 },
+      { text: "仕事の話をして距離を縮める", next: "work", aff: 10, aro: 5 },
+      { text: "「綺麗な人ですね」と率直に言う", next: "compliment", aff: 25, aro: 10 }
+    ]
+  },
+  sit: {
+    text: `隣の席に静かに腰を下ろす。\n\n彼女は一瞬だけこちらを見たが、すぐに視線をグラスに戻した。\n肩が近い。香水の甘い匂いがかすかに漂ってくる。\n\n数分後、彼女が小さく息をついた。\n「……今日は、誰かと話したい気分だったのかも」`,
+    choices: [
+      { text: "「話す相手、探してます？」と優しく聞く", next: "talk", aff: 15, aro: 10 },
+      { text: "「俺でよければ」と低めの声で返す", next: "flirt", aff: 20, aro: 20 }
+    ]
+  },
+  leave: {
+    text: `席を立って別の場所に移動した。\n\n振り返ると、彼女はもうこちらを見ていなかった。\n静かな夜が、ただ過ぎていくだけだった。`,
+    choices: [
+      { text: "やはり引き返す", next: "start", aff: 0, aro: 0 },
+      { text: "このまま帰る", next: "end_lonely", aff: 0, aro: 0 }
+    ]
+  },
+  work: {
+    text: `仕事の話で少し場が和む。\n彼女は意外とよく笑う人だった。\n\n「……こんな時間まで話が弾むなんて、久しぶり」\n\nグラスが空になる頃、彼女の足がテーブルの下で軽く触れた。\nわざとらしいほど、ゆっくりと。`,
+    choices: [
+      { text: "触れた足に軽く踏み返す", next: "touch", aff: 15, aro: 25 },
+      { text: "「もう少し、 ethereal な場所に行きませんか」と誘う", next: "invite", aff: 20, aro: 20 }
+    ]
+  },
+  compliment: {
+    text: `彼女の頰がわずかに赤らむ。\n\n「……そんな風に言われると、困る」\n\nでも目は笑っていた。指でグラスをくるくると回しながら、\n「あなた、大胆なんですね」と呟く。\n\n視線が落ちる先は、こちらの唇だった。`,
+    choices: [
+      { text: "距離を詰めて「困らせたいわけじゃない」と囁く", next: "close", aff: 25, aro: 30 },
+      { text: "「本当のことです」と真顔で続ける", next: "invite", aff: 20, aro: 15 }
+    ]
+  },
+  flirt: {
+    text: `「特別な夜、か……」\n\n彼女はグラスを置き、こちらに体を向けた。\nドレスの隙間から覗く鎖骨が、照明で艶やかに光る。\n\n「じゃあ、どう特別にするつもり？」\n\n声が少し低くなった。挑発とも、期待とも取れる響き。`,
+    choices: [
+      { text: "「今夜だけ、互いに素直になってみないか」", next: "invite", aff: 25, aro: 25 },
+      { text: "彼女の手に自分の手を重ねる", next: "touch", aff: 20, aro: 30 }
+    ]
+  },
+  touch: {
+    text: `彼女の足がこちらに絡むように動く。\n熱が伝わってくる。\n\n「……大胆」\n\n彼女は小さく息を吐き、視線を上げた。\n瞳の奥に、明確な欲の色が宿っている。\n\n「このままじゃ、ここじゃ足りないわね」`,
+    choices: [
+      { text: "「ホテル、取ってある」と告げる", next: "hotel", aff: 20, aro: 35 },
+      { text: "「俺の部屋は近い」と誘う", next: "room", aff: 15, aro: 30 }
+    ]
+  },
+  close: {
+    text: `顔が近い。吐息が混じる距離。\n\n彼女は目を細め、ゆっくりと唇を開いた。\n「……なら、証明してみて」\n\n次の瞬間、彼女の方から唇を重ねてきた。\n柔らかく、甘く、徐々に深くなっていくキス。\n舌が絡む感触に、二人の呼吸が乱れる。`,
+    choices: [
+      { text: "そのまま深く唇を貪る", next: "hotel", aff: 15, aro: 40 },
+      { text: "耳元で「場所を変えよう」と囁く", next: "room", aff: 20, aro: 35 }
+    ]
+  },
+  invite: {
+    text: `彼女はしばらくこちらを見つめた後、静かに頷いた。\n\n「……いいわ。今夜だけ、特別に」\n\n立ち上がる彼女の後ろ姿は、期待でわずかに緊張しているように見えた。\n出口に向かう背中を追いながら、胸の奥で熱が膨らんでいく。`,
+    choices: [
+      { text: "ホテルへ向かう", next: "hotel", aff: 15, aro: 30 },
+      { text: "自分の部屋へ誘う", next: "room", aff: 10, aro: 25 }
+    ]
+  },
+  hotel: {
+    text: `ドアが閉まった瞬間、彼女はこちらを押し倒すようにキスをしてきた。\n\n熱い吐息。絡み合う舌。\nドレスのファスナーを下ろすと、白い肌が露わになる。\nブラの奥で、柔らかな胸が形を変えながらこちらを待っている。\n\n「……見てるだけ？」\n\n彼女の声が、甘く掠れていた。`,
+    choices: [
+      { text: "胸に手を這わせ、ゆっくり爱撫する", next: "caress", aff: 20, aro: 40 },
+      { text: "彼女をベッドに押し倒し、上から覆いかぶさる", next: "dominate", aff: 15, aro: 45 }
+    ]
+  },
+  room: {
+    text: `部屋に入るなり、彼女は靴を脱ぎ、こちらに背中を向けた。\n\n「……開けて」\n\nドレスのファスナーに指をかける。ゆっくり下ろすと、\n滑らかな背中から腰にかけて、白い肌が現れる。\n下着は黒のレース。臀部の曲線が、照明の下で艶めかしく浮かび上がる。\n\n彼女が振り返り、こちらを見た。目はもう、隠しきれない欲で潤んでいる。`,
+    choices: [
+      { text: "後ろから抱き寄せ、首筋にキスを落とす", next: "caress", aff: 25, aro: 35 },
+      { text: "彼女を壁に押しつけ、激しく口づける", next: "dominate", aff: 15, aro: 40 }
+    ]
+  },
+  caress: {
+    text: `指先で胸の膨らみを包み、乳首を優しく転がす。\n彼女は喉の奥で甘い声を漏らし、腰をくねらせた。\n\n「んっ……そこ、敏感……」\n\n下着の中に手を滑らせると、すでに熱く湿っている。\n指を這わせるたび、彼女の息が乱れる。\n\n「……もう、入れて」\n\n懇願するような声が、耳元で熱く響いた。`,
+    choices: [
+      { text: "ゆっくりと結合する", next: "gentle", aff: 30, aro: 40 },
+      { text: "彼女の言葉に応え、一気に深く入れる", next: "intense", aff: 20, aro: 50 }
+    ]
+  },
+  dominate: {
+    text: `ベッドに押し倒し、彼女の両腕を頭上で押さえる。\n抵抗するどころか、彼女は脚を絡めてきた。\n\n「……乱暴な人」\n\n瞳は笑っている。下半身を密着させると、熱い感触が伝わってくる。\nすでに準備はできているらしい。\n\n「焦らさないで……欲しいの」`,
+    choices: [
+      { text: "言葉通り、激しく突き入れる", next: "intense", aff: 15, aro: 50 },
+      { text: "あえてゆっくりと、寸止めを繰り返す", next: "tease", aff: 25, aro: 45 }
+    ]
+  },
+  gentle: {
+    text: `ゆっくりと体を重ねる。\n熱い肉が彼女の奥を押し広げていく感触に、二人とも息を呑んだ。\n\n「あっ……ん、深い……」\n\n彼女の腕が背中に回る。腰をゆっくりと動かすたび、\n締め付けが強くなり、甘い声が漏れ出す。\n\n肌と肌が擦れ合う音。濡れた音。\n部屋の空気が、二人の熱で重くなっていく。`,
+    choices: [
+      { text: "ペースを上げ、一緒にイく", next: "end_sweet", aff: 30, aro: 40 },
+      { text: "彼女の耳元で「もっと感じて」と囁きながら責める", next: "end_deep", aff: 25, aro: 45 }
+    ]
+  },
+  intense: {
+    text: `一気に奥まで沈める。\n彼女の背中が反り、高い声が上がった。\n\n「あっ……！　んあっ、だめ、深い……！」\n\n構わず腰を打ち付ける。ベッドが軋む音。\n彼女の中は熱く、貪欲に咥え込んでくる。\n\n汗が肌を伝う。視線が絡む。\n彼女の瞳はもう、快感で焦点が合っていない。`,
+    choices: [
+      { text: "限界まで突き上げ、一緒に果てる", next: "end_intense", aff: 20, aro: 50 },
+      { text: "彼女を俯せにして、更に深く突く", next: "end_raw", aff: 15, aro: 55 }
+    ]
+  },
+  tease: {
+    text: `入れては抜き、入れては止める。\n彼女の腰が欲しがるように浮く。\n\n「やめて……そんなの、ひどい……」\n\n涙目でこちらを睨む彼女が、妙にエロい。\n再びゆっくりと沈めると、彼女は甘い悲鳴を上げた。\n\n「んあっ……！　お願い、もう……動かして……」`,
+    choices: [
+      { text: "彼女の願いを聞き入れ、激しく動く", next: "end_intense", aff: 25, aro: 45 },
+      { text: "寸止めを続けながら「自分で動いて」と命じる", next: "end_control", aff: 20, aro: 50 }
+    ]
+  },
+  // Endings
+  end_lonely: {
+    text: `結局、誰とも言葉を交わさず家に帰った。\n静かな夜が、ただ過ぎていく。\n\n——孤独エンド`,
+    isEnd: true,
+    title: "孤独な夜"
+  },
+  end_sweet: {
+    text: `ゆっくりと高まり合う快感の中で、彼女の体が強く痙攣した。\n\n「んあっ……イく……！」\n\n自分も同時に解放される。熱いものが溢れ、二人は抱き合ったまま呼吸を整えた。\n\n彼女が額を寄せて、小さく笑った。\n「……悪い夜じゃなかったわね」\n\n——甘い夜エンド`,
+    isEnd: true,
+    title: "甘い夜"
+  },
+  end_deep: {
+    text: `耳元で囁き続けながら、腰を深く打ち付ける。\n彼女はもう言葉にならない声しか出せず、爪を背中に立てていた。\n\n絶頂が波のように何度も押し寄せ、最後は彼女の中で自分も果てた。\n\n暫くして、彼女が掠れた声で言った。\n「……また、会える？」\n\n——深く繋がった夜エンド`,
+    isEnd: true,
+    title: "深く繋がった夜"
+  },
+  end_intense: {
+    text: `激しいピストンの果てに、彼女が大きく体を弓なりに反らせた。\n中が強く脈打ち、自分も限界を超える。\n\n熱いものが注がれる感触に、彼女は甘い吐息を漏らした。\n\n「……すごい、人……」\n\n汗だくの体を重ねたまま、二人はしばらく動けなかった。\n\n——激しい夜エンド`,
+    isEnd: true,
+    title: "激しい夜"
+  },
+  end_raw: {
+    text: `後ろから深く突かれ、彼女はシーツを掴んで喘いだ。\n「あっ、あっ、そこ……！　だめ、イっちゃう……！」\n\n限界まで突き上げると、彼女の体が大きく跳ねた。\n自分も同時に放つ。熱いものが奥に広がる感触。\n\n彼女は力なく崩れ落ち、横になったままこちらを見た。\n目はとろんとろとしていて、満足そうだった。\n\n——生々しい夜エンド`,
+    isEnd: true,
+    title: "生々しい夜"
+  },
+  end_control: {
+    text: `彼女は自ら腰を動かし始めた。\n恥ずかしそうに、でも貪欲に。\n\n「んっ……はあっ……こんなの……」\n\n上から見下ろしながら、時折深く突き上げてやる。\n彼女はすぐに限界を迎え、泣きそうな声でイった。\n\nその締め付けに耐えきれず、自分も中で果てる。\n\n「……意地悪」\n彼女はそう言いながら、満足げに微笑んでいた。\n\n——支配の夜エンド`,
+    isEnd: true,
+    title: "支配の夜"
+  }
+};
+
+let state = {
+  affection: 20,
+  arousal: 10,
+  current: "start"
+};
+
+function startGame() {
+  state = { affection: 20, arousal: 10, current: "start" };
+  updateStats();
+  showScreen("game");
+  renderScene("start");
+}
+
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+function updateStats() {
+  state.affection = Math.max(0, Math.min(100, state.affection));
+  state.arousal = Math.max(0, Math.min(100, state.arousal));
+  document.getElementById("affBar").style.width = state.affection + "%";
+  document.getElementById("aroBar").style.width = state.arousal + "%";
+  document.getElementById("affVal").textContent = state.affection;
+  document.getElementById("aroVal").textContent = state.arousal;
+}
+
+function renderScene(id) {
+  const scene = scenes[id];
+  if (!scene) return;
+
+  if (scene.isEnd) {
+    document.getElementById("endTitle").textContent = scene.title;
+    document.getElementById("endText").textContent = scene.text;
+    showScreen("ending");
+    return;
+  }
+
+  state.current = id;
+  document.getElementById("sceneText").textContent = scene.text;
+
+  const choicesEl = document.getElementById("choices");
+  choicesEl.innerHTML = "";
+  scene.choices.forEach(c => {
+    const btn = document.createElement("button");
+    btn.className = "choice-btn";
+    btn.textContent = c.text;
+    btn.onclick = () => choose(c);
+    choicesEl.appendChild(btn);
+  });
+
+  document.getElementById("hint").textContent = "";
+}
+
+function choose(choice) {
+  state.affection += choice.aff || 0;
+  state.arousal += choice.aro || 0;
+  updateStats();
+  renderScene(choice.next);
+}
+
+function restart() {
+  showScreen("title");
+}
+</script>
+</body>
+</html>
