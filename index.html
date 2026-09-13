@@ -126,6 +126,8 @@ body,html{width:100%;height:100%;overflow:hidden;background:#05080f;color:#e8eef
     <div class="select-card red" onclick="assignStarterDeck('Polymer')"><span class="badge">付加・高分子</span><h3 style="margin:6px 0;font-size:16px">付加・高分子デッキ</h3></div>
     <div class="select-card green" onclick="assignStarterDeck('Redox')"><span class="badge">酸化・エステル</span><h3 style="margin:6px 0;font-size:16px">酸化・エステル</h3></div>
   </div>
+  <button type="button" class="glass-btn primary wide" style="max-width:400px;margin-top:12px" onclick="tryContinueSave()">セーブデータで続ける</button>
+  <p id="title-save-hint" style="font-size:11px;color:#94a3b8;margin-top:8px"></p>
 </div>
 
 <div id="field-screen" class="screen">
@@ -841,6 +843,30 @@ function saveGame(silent){
   if(autoSave()){if(!silent)alert('セーブしました（所持'+(gameState.collection||[]).length+'枚）');}
   else if(!silent)alert('セーブ失敗（容量不足の可能性）');
 }
+
+function hasAnySave(){
+  try{return !!(localStorage.getItem('organicChemBattleSave')||localStorage.getItem('organicChemBattleSave_bak'));}catch(e){return false;}
+}
+function tryContinueSave(){
+  var raw=null;
+  try{raw=localStorage.getItem('organicChemBattleSave')||localStorage.getItem('organicChemBattleSave_bak');}catch(e){}
+  if(!raw){alert('セーブがありません。スターターを選んでください');return;}
+  try{
+    applySaveData(JSON.parse(raw));
+    returnToMenu=false;returnToBossPrep=false;
+    initDaily();checkAchievements(true);updateFieldUI();switchState('field');
+  }catch(e){alert('ロード失敗: '+(e&&e.message?e.message:e));}
+}
+function refreshTitleSaveHint(){
+  var el=document.getElementById('title-save-hint');
+  if(!el)return;
+  if(!hasAnySave()){el.innerText='セーブなし → 上のデッキから新規開始';return;}
+  try{
+    var d=JSON.parse(localStorage.getItem('organicChemBattleSave')||localStorage.getItem('organicChemBattleSave_bak'));
+    el.innerText='セーブあり: Lv.'+(d.playerLevel||1)+' / 試薬'+(d.reagents||0)+' / 所持'+((d.collection&&d.collection.length)||0)+'枚 → 「続ける」で再開';
+  }catch(e){el.innerText='セーブあり → 「続ける」で再開';}
+}
+
 function loadGame(){
   var raw=null;
   try{raw=localStorage.getItem('organicChemBattleSave')||localStorage.getItem('organicChemBattleSave_bak');}catch(e){}
@@ -895,6 +921,8 @@ function updateFieldUI(){
 function renderTree(){document.getElementById('tree-done').innerText=treeDoneCount(gameState);document.getElementById('tree-total').innerText=REACTION_TREE.length;var list=document.getElementById('tree-list');list.innerHTML='';var chains={};REACTION_TREE.forEach(function(r){if(!chains[r.chain])chains[r.chain]=[];chains[r.chain].push(r);});Object.keys(chains).forEach(function(ch){var h=document.createElement('div');h.style.cssText='color:#f9a8d4;font-size:13px;margin:10px 0 6px';h.innerText='▸ '+ch;list.appendChild(h);chains[ch].forEach(function(r){var done=!!(gameState.recipes&&gameState.recipes[r.id]);var div=document.createElement('div');div.className='tree-node'+(done?' done':'');div.innerHTML='<div class="tree-title">'+(done?'✅ ':'🔒 ')+r.name+'</div><div class="tree-path">'+r.path+'</div><div class="tree-rew">'+(done?'解放済':'未解放')+' · 試薬'+r.reward+'</div>';list.appendChild(div);});});}
 
 function assignStarterDeck(type){
+  var _has=false;try{_has=!!(localStorage.getItem('organicChemBattleSave')||localStorage.getItem('organicChemBattleSave_bak'));}catch(e){}
+  if(_has){if(!confirm('セーブデータがあります。\n新規開始すると上書きされます。よろしいですか？'))return;}
   gameState.currentDeck=[];gameState.collection=[];gameState.deckListOrder=[];returnToMenu=false;returnToBossPrep=false;
   gameState.playerLevel=1;gameState.playerExp=0;gameState.lastRank='初学者';gameState.recipes={};
   var names=type==='Aromatic'?['ベンゼン','トルエン','濃硝酸','濃硫酸','フェノール','グルコース','ニトロ基']:type==='Polymer'?['エチレン','臭素','塩素','重合触媒(Ziegler)','グルコース','エタノール']:['エタノール','酢酸','水酸化ナトリウム','過マンガン酸カリウム','グルコース','アセトアルデヒド'];
@@ -1551,6 +1579,9 @@ function addToDeck(name){var owned=gameState.collection.filter(function(c){retur
 function removeFromDeck(name){var i=gameState.currentDeck.findIndex(function(c){return c.name===name;});if(i>=0){gameState.currentDeck.splice(i,1);renderDeckEdit();}}
 
 initDaily();
+try{refreshTitleSaveHint();}catch(e){}
+window.addEventListener('pagehide',function(){try{autoSave();}catch(e){}});
+window.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden'){try{autoSave();}catch(e){}}});
 </script>
 </body>
 </html>
