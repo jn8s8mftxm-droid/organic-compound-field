@@ -34,7 +34,17 @@ body,html{width:100%;height:100%;overflow:hidden;background:#05080f;color:#e8eef
 #battle-screen{background:radial-gradient(ellipse at 50% 0%,#1e293b,#0f172a 40%,#020617);padding:12px;justify-content:space-between}
 .battle-header{display:flex;justify-content:space-between;margin-bottom:6px}
 #lab-canvas-container{width:100%;height:140px;border-radius:14px;overflow:hidden;border:1px solid rgba(56,189,248,.35);background:#071018}
-.battle-log-box{background:rgba(15,23,42,.9);border:1px solid rgba(71,85,105,.6);border-radius:12px;padding:10px;min-height:52px;font-size:12px;text-align:center;display:flex;align-items:center;justify-content:center;white-space:pre-line;margin:6px 0}
+.battle-log-box{background:rgba(15,23,42,.92);border:1px solid rgba(71,85,105,.6);border-radius:12px;padding:10px 12px;min-height:64px;max-height:110px;overflow-y:auto;font-size:12px;text-align:left;line-height:1.55;white-space:pre-line;margin:6px 0;color:#e2e8f0}
+.battle-log-box .log-title{color:#7dd3fc;font-weight:600;margin-bottom:2px}
+.battle-log-box .log-dmg{color:#fca5a5}
+.battle-log-box .log-heal{color:#86efac}
+.battle-log-box .log-note{color:#fbbf24;font-size:11px}
+.battle-log-box .log-learn{color:#c4b5fd;font-size:11px;margin-top:2px}
+.stab-bar{height:8px;background:#1e293b;border-radius:99px;overflow:hidden;margin:4px 0 6px;max-width:240px}
+.stab-fill{height:100%;border-radius:99px}
+.stab-ok{background:linear-gradient(90deg,#22c55e,#4ade80)}
+.stab-mid{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+.stab-bad{background:linear-gradient(90deg,#ef4444,#f87171)}
 .quiz-box{background:rgba(88,28,135,.45);border:1px solid rgba(192,132,252,.5);border-radius:12px;padding:12px;text-align:center;display:flex;flex-direction:column;gap:8px}
 .quiz-options{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .quiz-btn{background:linear-gradient(145deg,#2563eb,#4338ca);border:none;color:#fff;padding:10px;border-radius:10px;font-size:12px;cursor:pointer;width:100%}
@@ -302,7 +312,7 @@ body,html{width:100%;height:100%;overflow:hidden;background:#05080f;color:#e8eef
     <h3 style="color:#2dd4bf">🧬 分子ビルダー</h3>
     <button type="button" class="glass-btn slate" onclick="goBackFromMenu()">戻る</button>
   </div>
-  <p class="mol-hint">原子・官能基を置き、結合モードで手（価数）をつなぐ。繋いだ原子は自動で隣接します。手が余っているとカード化不可。</p>
+  <p class="mol-hint">原子・官能基を置き結合でつなぐ。火力は官能基が主で、炭素を増やすだけは頭打ち。安定度が低いと使用時に自爆することがあります。</p>
   <p style="font-size:12px;color:#94a3b8">試薬 <span id="synth-reagents">150</span>　コスト: ダメージ50→100試薬 〜 ダメージ300→1000試薬</p>
   <div class="menu-label">パーツ</div>
   <div class="atom-palette" id="atom-palette"></div>
@@ -638,6 +648,12 @@ const ACHIEVEMENTS=[
 {id:"lab10",name:"研究室Lv10",desc:"研究室Lv10",reward:150,check:function(s){return (s.labLevel||1)>=10}},
 {id:"quiz10",name:"クイズ10",desc:"クイズ10正解",reward:50,check:function(s){return (s.flags.quizOk||0)>=10}},
 {id:"iso10",name:"異性体10",desc:"異性体10正解",reward:50,check:function(s){return (s.flags.isoOk||0)>=10}},
+{id:"fg_quest_oh",name:"官能基クエスト:OH",desc:"分子ビルダーでヒドロキシ基を含む分子を作成",reward:40,check:function(s){return !!s.flags.fgOh}},
+{id:"fg_quest_cooh",name:"官能基クエスト:COOH",desc:"分子ビルダーでカルボキシ基を含む分子を作成",reward:45,check:function(s){return !!s.flags.fgCooh}},
+{id:"fg_quest_no2",name:"官能基クエスト:NO2",desc:"分子ビルダーでニトロ基を含む分子を作成",reward:50,check:function(s){return !!s.flags.fgNo2}},
+{id:"fg_quest_nh2",name:"官能基クエスト:NH2",desc:"分子ビルダーでアミノ基を含む分子を作成",reward:45,check:function(s){return !!s.flags.fgNh2}},
+{id:"fg_quest_stable",name:"安定分子設計",desc:"安定度70以上のオリジンを作成",reward:60,check:function(s){return !!s.flags.fgStable}},
+{id:"fg_quest_known",name:"教科書分子",desc:"既知分子（メタン等）をビルダーで再現",reward:50,check:function(s){return !!s.flags.fgKnown}},
 {id:"rich",name:"試薬長者",desc:"試薬800以上",reward:80,check:function(s){return (s.reagents||0)>=800}}
 ];
 const DAILY_QUESTS=[{key:"nitro",label:"ニトロ化を1回"},{key:"sapon",label:"けん化を1回"},{key:"poly",label:"重合を1回"},{key:"ester",label:"エステル化を1回"},{key:"oxid",label:"酸化を1回"},{key:"acetyl",label:"アセチル化を1回"},{key:"dehyd",label:"脱水を1回"}];
@@ -659,7 +675,7 @@ const ISOMER_BANK=[
 const RARITY_ORDER={SSSR:0,SSR:1,SR:2,R:3,ORIGIN:2};
 const GACHA_TYPES=[
 {id:"normal",name:"通常ガチャ",cost:100,desc:"全カード",rates:function(b){return{SSSR:0.1+b*0.15,SSR:2.9+b,SR:15+b*2,R:100};},pool:function(){return ALL_CARDS.slice();}},
-{id:"cheap",name:"練習ガチャ",cost:40,desc:"R・SR",rates:function(){return{SR:25,R:100};},pool:function(){return ALL_CARDS.filter(function(c){return c.rarity==='R'||c.rarity==='SR';});}},
+{id:"cheap",name:"量産ガチャ",cost:40,desc:"R・SR",rates:function(){return{SR:25,R:100};},pool:function(){return ALL_CARDS.filter(function(c){return c.rarity==='R'||c.rarity==='SR';});}},
 {id:"aromatic",name:"芳香族ガチャ",cost:120,desc:"芳香族",rates:function(b){return{SSR:5+b,SR:30,R:100};},pool:function(){return ALL_CARDS.filter(function(c){return ['Aromatic','Phenol','Reagent','FunctionalGroup'].indexOf(c.attribute)>=0;});}},
 {id:"alcohol",name:"アルコール・酸ガチャ",cost:110,desc:"酸・アルコ",rates:function(b){return{SSR:4+b,SR:28,R:100};},pool:function(){return ALL_CARDS.filter(function(c){return ['Alcohol','Acid','Ester','Oxidant','Aldehyde','Ketone','Base'].indexOf(c.attribute)>=0;});}},
 {id:"poly",name:"重合・付加ガチャ",cost:130,desc:"オレフィン",rates:function(b){return{SSR:8+b,SR:35,R:100};},pool:function(){return ALL_CARDS.filter(function(c){return ['Alkenyl','Alkynyl','Halogen','Catalyst','Hydrocarbon'].indexOf(c.attribute)>=0;});}},
@@ -667,8 +683,8 @@ const GACHA_TYPES=[
 {id:"premium",name:"SSR・SSSR確定",cost:1000,desc:"SSR93%/SSSR7%",rates:function(){return{SSSR:7,SSR:100};},pool:function(){return ALL_CARDS.filter(function(c){return c.rarity==='SSR'||c.rarity==='SSSR';});}}
 ];
 const MOL_PARTS=[
-{id:"C",label:"C",val:4,sym:"C",cls:"C",atk:12},
-{id:"H",label:"H",val:1,sym:"H",cls:"H",atk:2},
+{id:"C",label:"C",val:4,sym:"C",cls:"C",atk:3},
+{id:"H",label:"H",val:1,sym:"H",cls:"H",atk:0},
 {id:"O",label:"O",val:2,sym:"O",cls:"O",atk:10},
 {id:"N",label:"N",val:3,sym:"N",cls:"N",atk:11},
 {id:"Cl",label:"Cl",val:1,sym:"Cl",cls:"Cl",atk:14},
@@ -696,6 +712,7 @@ function cardPowerText(card){
   if(card.attackPower===Infinity)h+='<div class="card-dmg">∞ダメージ</div>';
   else if((card.attackPower||0)>0)h+='<div class="card-dmg">'+card.attackPower+'ダメージ</div>';
   if((card.healPower||0)>0)h+='<div class="card-heal">'+card.healPower+'回復</div>';
+  if(card.stability!=null)h+='<div style="font-size:8px;color:#64748b">安定'+card.stability+(card.boomChance?' 爆'+card.boomChance+'%':'')+'</div>';
   if(!h)h='<div class="card-dmg">0ダメージ</div>';
   return h;
 }
@@ -713,6 +730,60 @@ function synthCostForDamage(atk){
   var d=Math.max(50,Math.min(300,atk));
   return Math.round(100+(d-50)/250*900);
 }
+
+function countMolSyms(){var m={};molAtoms.forEach(function(a){m[a.sym]=(m[a.sym]||0)+1;});return m;}
+function evalMolecule(){
+  var m=countMolSyms();
+  var c=m.C||0,h=m.H||0,o=m.O||0,n=m.N||0,cl=m.Cl||0,s=m.S||0,p=m.P||0;
+  var oh=m.OH||0,cooh=m.COOH||0,nh2=m.NH2||0,no2=m.NO2||0,ch3=m.CH3||0,nut=m.Nut||0;
+  var fgCount=oh+cooh+nh2+no2+ch3+nut;
+  var atomN=molAtoms.length;
+  var open=0;molAtoms.forEach(function(a,i){open+=freeVal(i);});
+
+  // ダメージ：官能基が主、炭素骨格は頭打ち
+  var fgAtk=oh*36+cooh*48+nh2*38+no2*52+ch3*14;
+  var heteroAtk=o*6+n*8+cl*10+s*7+p*8;
+  var carbonAtk=0;
+  for(var i=1;i<=c;i++){
+    if(i<=4)carbonAtk+=5;
+    else if(i<=8)carbonAtk+=2;
+    else carbonAtk+=0.5;
+  }
+  carbonAtk=Math.floor(carbonAtk);
+  var heal=nut*35;
+  var atk=Math.floor(fgAtk+heteroAtk+carbonAtk);
+  if(fgCount===0&&c>=1)atk=Math.min(atk,35+Math.min(c,6)*3);
+  atk=Math.max(0,Math.min(300,atk));
+
+  // 安定度 0-100（低いほど不安定→自爆率）
+  var stab=100;
+  if(c>6)stab-=(c-6)*5;
+  if(c>10)stab-=(c-10)*4;
+  if(atomN>16)stab-=(atomN-16)*3;
+  if(fgCount===0&&c>=5)stab-=20;
+  if(fgCount===0&&c>=8)stab-=15;
+  if(no2>=2)stab-=18;
+  if(no2>=1&&c>=6)stab-=8;
+  if(oh+cooh+nh2>=1&&c<=6)stab+=5;
+  if(open>0)stab-=open*8;
+  stab=Math.max(0,Math.min(100,Math.round(stab)));
+
+  // 不安定（安定度が閾値未満）で自爆率
+  var boom=0;
+  if(stab<55)boom=Math.min(55,Math.round((55-stab)*1.6));
+  if(stab<30)boom=Math.min(70,boom+10);
+
+  var notes=[];
+  if(fgCount===0&&c>=4)notes.push('炭素骨格中心：現実では反応性が低く、火力は頭打ちです');
+  if(c>8)notes.push('炭素が多い分子はここでは不安定扱い（設計上のペナルティ）');
+  if(no2>=1)notes.push('ニトロ基は高火力だが安定度を下げます');
+  if(fgCount>=1)notes.push('官能基が火力の主因です（学習上の重点）');
+  if(boom>0)notes.push('安定度不足：使用時に自爆の可能性 '+boom+'%');
+  if(stab>=70)notes.push('安定な設計です');
+
+  return{atk:atk,heal:heal,stability:stab,boom:boom,fgCount:fgCount,cCount:c,open:open,notes:notes,m:m};
+}
+
 function getLabGachaBoost(){
   var lv=gameState.labLevel||1;
   if(lv>=10)return 1.2;
@@ -725,7 +796,7 @@ function getLabGachaBoost(){
 var gameState={
   reagents:150,playerHP:200,playerMaxHP:200,collection:[],currentDeck:[],
   kills:0,playerLevel:1,playerExp:0,lastRank:'初学者',
-  flags:{nitro:false,sapon:false,poly:false,ester:false,oxid:false,acetyl:false,dehyd:false,fat:false,boss:false,combo3:false,combo5:false,combo8:false,refined:false,refineCount:0,gachaCount:0,origin:false,originCount:0,memoCount:0,dailyTotal:0,bossKills:0,healed:false,hfUsed:false,quizOk:0,isoOk:0,noCatBoss:false,saveBoss:false,midReact:0,hardKills:0,monoWin:false,originWin:false,seenMidTut:false,seenTut:false,battles:0,wins:0,losses:0,reactUses:{},dupConvert:0,shards:0},
+  flags:{nitro:false,sapon:false,poly:false,ester:false,oxid:false,acetyl:false,dehyd:false,fat:false,boss:false,combo3:false,combo5:false,combo8:false,refined:false,refineCount:0,gachaCount:0,origin:false,originCount:0,memoCount:0,dailyTotal:0,bossKills:0,healed:false,hfUsed:false,quizOk:0,isoOk:0,noCatBoss:false,saveBoss:false,midReact:0,hardKills:0,monoWin:false,originWin:false,seenMidTut:false,seenTut:false,battles:0,wins:0,losses:0,reactUses:{},dupConvert:0,shards:0,fgOh:false,fgCooh:false,fgNo2:false,fgNh2:false,fgStable:false,fgKnown:false},
   achieved:{},recipes:{},dailyDate:'',dailyKey:'',dailyDone:false,deckListOrder:[],
   deckSlots:[{name:'',cards:[]},{name:'',cards:[]},{name:'',cards:[]}],
   labLevel:1,labExp:0,labFreeDate:'',zukanRewards:{r30:false,r60:false,r90:false},lastReplay:[],nextDamageBonus:1.0,quizMisses:[],newsRead:false
@@ -735,7 +806,7 @@ var pendingIntermediate=null,fromBattleToHistory=false,returnToBossPrep=false;
 var battleHistory=[],battleTurnCount=0,bossTurnLimit=0,comboCount=0,zukanFilter='all',deckAttrFilter='all';
 var battleUsedCatalyst=false,battleBigSpend=false,battleAttrsUsed={},battleOriginCount=0;
 var qoScore=0,qoTotal=0,isoScore=0,isoStreak=0;
-var bDeck=[],bHand=[],bDiscard=[],bSelected=[],monsterHP=500,isPlayerTurn=true;var battleReactionsUsed=[];var tutIndex=0;
+var bDeck=[],bHand=[],bDiscard=[],bSelected=[],monsterHP=500,isPlayerTurn=true;var battleReactionsUsed=[];var tutIndex=0;var lastSpendBoom=0;
 var memoList=[],memoIdx=0,memoShow=false;
 var molAtoms=[],molBonds=[],bondMode=false,bondPick=null,molHistory=[];
 
@@ -859,6 +930,7 @@ const REACTION_PATHS=[
 ];
 const NEWS_ITEMS=[
 {date:"2026-03",title:"アップデート v1.5",body:"セーブ強化、捨て札リシャッフル、反応ハイライト、反応解説、図鑑経路図、反応クイズ、統計・お知らせ、実験レポート、分子ビルダー改善など。"},
+{date:"2026-03",title:"分子ビルダー学習調整",body:"ダメージは官能基中心・炭素は頭打ち。安定度と自爆率を表示。官能基クエスト実績を追加。バトルログ見やすく。練習ガチャ→量産ガチャ。"},
 {date:"2026-02",title:"プレイのヒント",body:"長押しでカードの反応を確認。中間体を手札に残すと連鎖コンボが伸びます。ボスは条件属性を1枚入れると攻撃が通りやすくなります。"}
 ];
 const REACT_QUIZ_BANK=[
@@ -1020,7 +1092,7 @@ function applySaveData(data){
   gameState.playerLevel=Number(data.playerLevel)||1;
   gameState.playerExp=Number(data.playerExp)||0;
   gameState.lastRank=data.lastRank||'初学者';
-  gameState.flags=Object.assign({nitro:false,sapon:false,poly:false,ester:false,oxid:false,acetyl:false,dehyd:false,fat:false,boss:false,combo3:false,combo5:false,combo8:false,refined:false,refineCount:0,gachaCount:0,origin:false,originCount:0,memoCount:0,dailyTotal:0,bossKills:0,healed:false,hfUsed:false,quizOk:0,isoOk:0,noCatBoss:false,saveBoss:false,midReact:0,hardKills:0,monoWin:false,originWin:false,seenMidTut:false,seenTut:false,battles:0,wins:0,losses:0,reactUses:{},dupConvert:0,shards:0},data.flags||{});
+  gameState.flags=Object.assign({nitro:false,sapon:false,poly:false,ester:false,oxid:false,acetyl:false,dehyd:false,fat:false,boss:false,combo3:false,combo5:false,combo8:false,refined:false,refineCount:0,gachaCount:0,origin:false,originCount:0,memoCount:0,dailyTotal:0,bossKills:0,healed:false,hfUsed:false,quizOk:0,isoOk:0,noCatBoss:false,saveBoss:false,midReact:0,hardKills:0,monoWin:false,originWin:false,seenMidTut:false,seenTut:false,battles:0,wins:0,losses:0,reactUses:{},dupConvert:0,shards:0,fgOh:false,fgCooh:false,fgNo2:false,fgNh2:false,fgStable:false,fgKnown:false},data.flags||{});
   gameState.achieved=data.achieved||{};
   gameState.recipes=data.recipes||{};
   gameState.dailyDate=data.dailyDate||'';
@@ -1360,10 +1432,8 @@ function molPseudoSmiles(){
   return parts.join('-')+(molBonds.length?' (bonds:'+molBonds.length+')':'');
 }
 function updateMolStatus(){
-  var atk=0,heal=0,open=0;
-  molAtoms.forEach(function(a,i){atk+=a.atk;heal+=a.heal;open+=freeVal(i);});
-  atk=Math.min(300,atk);
-  var cost=synthCostForDamage(Math.max(50,atk));
+  var ev=evalMolecule();
+  var cost=synthCostForDamage(Math.max(50,ev.atk));
   var known=matchKnownMol();
   var formula=molFormulaText();
   var smi=molPseudoSmiles();
@@ -1371,26 +1441,30 @@ function updateMolStatus(){
     var inp=document.getElementById('orig-name');
     if(inp&&!inp.value.trim())inp.placeholder='自動: '+known.name;
   }
+  var stabCls=ev.stability>=70?'stab-ok':(ev.stability>=45?'stab-mid':'stab-bad');
+  var notesHtml=ev.notes.map(function(t){return '<div style="color:#94a3b8;font-size:11px">・'+t+'</div>';}).join('');
   document.getElementById('mol-status').innerHTML=
     '<div style="font-size:14px;color:#fbbf24;margin-bottom:4px">必要試薬 <b style="font-size:18px">'+cost+'</b>　所持 '+gameState.reagents+'</div>'+
     '分子式: <b>'+formula+'</b> · SMILES風: <span style="color:#94a3b8">'+smi+'</span><br>'+
     (known?'<span style="color:#a5b4fc">既知分子マッチ: '+known.name+'（'+known.formula+'）</span><br>':'')+
-    '原子数 '+molAtoms.length+' · 結合 '+molBonds.length+
-    ' · 余っている手 <b style="color:'+(open?'#f87171':'#4ade80')+'">'+open+'</b><br>'+
-    '予想ダメージ: <b>'+atk+'</b>（上限300）'+(heal?' / 回復 '+heal:'')+'<br>'+
-    (open>0
-      ?'<span style="color:#f87171">手が余っているためカード化不可。余っている原子が青枠で示されます。</span>'
-      :(atk<50
-        ?'<span style="color:#fbbf24">ダメージが弱すぎます（最低50）。</span>'
+    '原子 '+molAtoms.length+' · 結合 '+molBonds.length+' · 余手 <b style="color:'+(ev.open?'#f87171':'#4ade80')+'">'+ev.open+'</b> · C数 '+ev.cCount+' · 官能基数 '+ev.fgCount+'<br>'+
+    '<div style="margin-top:4px">予想ダメージ: <b>'+ev.atk+'</b>（上限300）'+(ev.heal?' / 回復 '+ev.heal:'')+'</div>'+
+    '<div>安定度: <b style="color:'+(ev.stability>=70?'#4ade80':(ev.stability>=45?'#fbbf24':'#f87171'))+'">'+ev.stability+'</b>/100'+(ev.boom?' · 自爆率 <b style="color:#f87171">'+ev.boom+'%</b>':'')+'</div>'+
+    '<div class="stab-bar"><div class="stab-fill '+stabCls+'" style="width:'+ev.stability+'%"></div></div>'+
+    notesHtml+
+    (ev.open>0
+      ?'<span style="color:#f87171">手が余っているためカード化不可。</span>'
+      :(ev.atk<50
+        ?'<span style="color:#fbbf24">火力不足（最低50）。官能基の追加を推奨。</span>'
         :'<span style="color:#4ade80">完成可能 — カード化できます</span>'));
 }
 function createOriginalCard(){
   if(molAtoms.length<1){alert('原子を置いてください');return;}
-  var open=0,atk=0,heal=0,parts=[];
-  molAtoms.forEach(function(a,i){open+=freeVal(i);atk+=a.atk;heal+=a.heal;parts.push(a.sym);});
+  var ev=evalMolecule();
+  var open=ev.open,atk=ev.atk,heal=ev.heal,parts=[];
+  molAtoms.forEach(function(a){parts.push(a.sym);});
   if(open>0){alert('手が余っている状態ではカードにできません。\n余っている手: '+open+'\n結合モードでつなぐか、Hなどで埋めてください。');return;}
-  atk=Math.min(300,atk);
-  if(atk<50){alert('ダメージが弱すぎます（最低50）。\n原子・官能基を追加してください。');return;}
+  if(atk<50){alert('ダメージが弱すぎます（最低50）。\n官能基（OH, COOH, NO2 等）の追加を推奨します。\n※炭素を増やすだけではあまり強くなりません。');return;}
   var cost=synthCostForDamage(atk);
   if(gameState.reagents<cost){alert('試薬が足りません（必要 '+cost+' / 所持 '+gameState.reagents+'）');return;}
   gameState.reagents-=cost;
@@ -1398,13 +1472,20 @@ function createOriginalCard(){
   var known=matchKnownMol();
   var name=custom||(known?known.name:('合成分子·'+parts.slice(0,4).join('')+(parts.length>4?'…':'')));
   var formula=known?known.formula:molFormulaText();
-  var attr=known?known.attr:(heal>0&&atk===0?'Nutrient':(parts.indexOf('NO2')>=0||parts.indexOf('N')>=0?'Aromatic':(parts.indexOf('O')>=0||parts.indexOf('OH')>=0?'Alcohol':'Alkane')));
-  if(known&&!custom){atk=Math.max(atk,known.atk);heal=Math.max(heal,known.heal||0);}
-  var card={name:name,formula:formula,attackPower:atk,healPower:heal,attribute:attr,rarity:'ORIGIN',id:uid(),origin:true};
+  var attr=known?known.attr:(heal>0&&atk===0?'Nutrient':(parts.indexOf('NO2')>=0||parts.indexOf('N')>=0?'Aromatic':(parts.indexOf('O')>=0||parts.indexOf('OH')>=0||parts.indexOf('COOH')>=0?'Alcohol':'Alkane')));
+  if(known&&!custom){atk=Math.max(atk,known.atk);heal=Math.max(heal,known.heal||0);ev.stability=Math.max(ev.stability,75);ev.boom=0;}
+  var card={name:name,formula:formula,attackPower:atk,healPower:heal,attribute:attr,rarity:'ORIGIN',id:uid(),origin:true,stability:ev.stability,boomChance:ev.boom};
   gameState.collection.push(card);
   gameState.flags.origin=true;gameState.flags.originCount=(gameState.flags.originCount||0)+1;
+  if(ev.m.OH)gameState.flags.fgOh=true;
+  if(ev.m.COOH)gameState.flags.fgCooh=true;
+  if(ev.m.NO2)gameState.flags.fgNo2=true;
+  if(ev.m.NH2)gameState.flags.fgNh2=true;
+  if(ev.stability>=70)gameState.flags.fgStable=true;
+  if(known)gameState.flags.fgKnown=true;
   checkAchievements();saveGame(true);
-  document.getElementById('synth-msg').innerText='作成: '+name+'（'+atk+'ダメージ'+(heal?'/'+heal+'回復':'')+'） 試薬-'+cost;
+  var boomMsg=ev.boom?(' / 自爆率'+ev.boom+'%'):'';
+  document.getElementById('synth-msg').innerText='作成: '+name+'（'+atk+'ダメージ 安定度'+ev.stability+boomMsg+'） 試薬-'+cost;
   document.getElementById('synth-reagents').innerText=gameState.reagents;
   document.getElementById('orig-name').value='';
   clearMol();
@@ -1779,10 +1860,28 @@ function setupBattle(){
   for(var i=0;i<5;i++)drawCard();startPlayerTurn(true);
 }
 function pushHistory(msg){battleHistory.push(msg);if(battleHistory.length>50)battleHistory.shift();}
+function setBattleLog(message){
+  var el=document.getElementById('battle-log');
+  if(!el)return;
+  var raw=String(message||'');
+  var lines=raw.split('\n');
+  var html='';
+  lines.forEach(function(line,i){
+    var t=line;
+    if(i===0)html+='<div class="log-title">'+t+'</div>';
+    else if(/ダメージ/.test(t))html+='<div class="log-dmg">'+t+'</div>';
+    else if(/回復/.test(t))html+='<div class="log-heal">'+t+'</div>';
+    else if(/^📖/.test(t)||/求電子|還元|けん化|重合|酸化|脱水|エステル/.test(t))html+='<div class="log-learn">'+t+'</div>';
+    else if(/弱点|連鎖|条件|半減|試薬|コンボ|自爆|安定/.test(t))html+='<div class="log-note">'+t+'</div>';
+    else html+='<div>'+t+'</div>';
+  });
+  el.innerHTML=html||raw;
+  el.scrollTop=el.scrollHeight;
+}
 function finalizeReplay(){gameState.lastReplay=battleHistory.slice();}
-function startPlayerTurn(first){if(isBattleOver)return;isPlayerTurn=true;isProcessing=false;if(!first)battleTurnCount++;if(bossTurnLimit>0&&!isPractice){var left=bossTurnLimit-battleTurnCount;document.getElementById('turn-limit').innerText='⏱ 残り'+Math.max(0,left);if(left<=0){isBattleOver=true;document.getElementById('battle-log').innerText='ターン切れ';finalizeReplay();setTimeout(function(){gameState.playerHP=gameState.playerMaxHP;switchState('field');},1600);return;}}if(botulinumActive&&monsterHP>0&&!isPractice){monsterHP-=200;document.getElementById('monster-hp').innerText=Math.max(0,monsterHP);if(monsterHP<=0){winBattle('毒素');return;}}if(!first)drawCard();ensureHandNotEmpty();
+function startPlayerTurn(first){if(isBattleOver)return;isPlayerTurn=true;isProcessing=false;if(!first)battleTurnCount++;if(bossTurnLimit>0&&!isPractice){var left=bossTurnLimit-battleTurnCount;document.getElementById('turn-limit').innerText='⏱ 残り'+Math.max(0,left);if(left<=0){isBattleOver=true;setBattleLog('ターン切れ');finalizeReplay();setTimeout(function(){gameState.playerHP=gameState.playerMaxHP;switchState('field');},1600);return;}}if(botulinumActive&&monsterHP>0&&!isPractice){monsterHP-=200;document.getElementById('monster-hp').innerText=Math.max(0,monsterHP);if(monsterHP<=0){winBattle('毒素');return;}}if(!first)drawCard();ensureHandNotEmpty();
   if(first&&!gameState.flags.seenMidTut){/* mid tut shown on first intermediate */}
-  document.getElementById('battle-log').innerText=first?(isPractice?'練習':'カード選択'):'あなたのターン';updateBattleUI();}
+  setBattleLog(first?(isPractice?'練習':'カード選択'):'あなたのターン');updateBattleUI();}
 function reshuffleDiscard(){
   if(!bDiscard.length)return false;
   bDeck=bDiscard.slice().sort(function(){return Math.random()-0.5;});
@@ -1798,8 +1897,8 @@ function drawCard(){
 }
 function ensureHandNotEmpty(){
   if(bHand.length>0)return;
-  if(drawCard()){document.getElementById('battle-log').innerText='山札から1枚補充';return;}
-  document.getElementById('battle-log').innerText='手札・山札・捨て札がすべて空です。ターン終了のみ可能です。';
+  if(drawCard()){setBattleLog('山札から1枚補充');return;}
+  setBattleLog('手札・山札・捨て札がすべて空です。ターン終了のみ可能です。')
   showToast('カードなし：ターン終了または逃げる');
 }
 
@@ -1932,11 +2031,11 @@ function updateBattleUI(){
 function showLongPress(card){document.getElementById('lp-title').innerText=card.name;document.getElementById('lp-body').innerText=getLongPressText(card);document.getElementById('longpress-popup').style.display='block';}
 function closeLongPress(){document.getElementById('longpress-popup').style.display='none';}
 function toggleSelectCard(card){if(!isPlayerTurn||isBattleOver||isProcessing)return;var idx=bSelected.findIndex(function(c){return c.id===card.id;});if(idx>=0)bSelected.splice(idx,1);else bSelected.push(card);updateBattleUI();}
-function skipTurn(){if(!isPlayerTurn||isBattleOver||isProcessing)return;isProcessing=true;bSelected=[];document.getElementById('battle-log').innerText='ターン終了';updateBattleUI();setTimeout(endPlayerTurn,700);}
-function fleeBattle(){if(!isPlayerTurn||isBattleOver||isProcessing)return;isBattleOver=true;isProcessing=true;document.getElementById('battle-log').innerText=isPractice?'練習終了':'脱出';finalizeReplay();autoSave();setTimeout(function(){switchState('field');},1000);}
+function skipTurn(){if(!isPlayerTurn||isBattleOver||isProcessing)return;isProcessing=true;bSelected=[];setBattleLog('ターン終了');updateBattleUI();setTimeout(endPlayerTurn,700);}
+function fleeBattle(){if(!isPlayerTurn||isBattleOver||isProcessing)return;isBattleOver=true;isProcessing=true;setBattleLog(isPractice?'練習終了':'脱出');finalizeReplay();autoSave();setTimeout(function(){switchState('field');},1000);}
 function winBattle(msg){
   isBattleOver=true;finalizeReplay();
-  if(isPractice){document.getElementById('battle-log').innerText='練習終了';setTimeout(function(){switchState('field');},1100);return;}
+  if(isPractice){setBattleLog('練習終了');setTimeout(function(){switchState('field');},1100);return;}
   gameState.kills++;gameState.flags.wins=(gameState.flags.wins||0)+1;
   var m=gameState.currentMonster;
   if(m&&(m.isBoss||m.level>=3))gameState.flags.hardKills=(gameState.flags.hardKills||0)+1;
@@ -1951,7 +2050,7 @@ function winBattle(msg){
   if(m&&m.isBoss)reward+=100;if(comboCount>=2&&gameState.labLevel>=5)reward+=10*comboCount;
   gameState.reagents+=reward;
   autoSave();
-  document.getElementById('battle-log').innerText=msg+'\n試薬 +'+reward+'\n経験 +'+px;
+  setBattleLog(msg+'\n試薬 +'+reward+'\n経験 +'+px)
   gameState._lastReport=buildBattleReport(msg,reward,px);
   setTimeout(function(){showBattleReport();},900);
 }
@@ -1978,7 +2077,7 @@ function executePlayerAttack(){
   else if(has(n,'アニリン')&&has(n,'ジアゾ化剤')){product={name:'アゾベンゼン',formula:'C6H5N=NC6H5',attackPower:110,healPower:0,attribute:'Aromatic',rarity:'SSR'};baseDamage=Math.floor(110*catMul);logMessage=dmgLog('アゾ',baseDamage);isReaction=true;recipeId='azo';}
   else if(has(n,'酢酸')&&has(n,'エタノール')){product={name:'酢酸エチル',formula:'CH3COOC2H5',attackPower:Math.floor(55*catMul),healPower:0,attribute:'Ester',rarity:'R'};baseDamage=Math.floor(55*catMul);logMessage=dmgLog('エステル化',baseDamage);markFlag('ester');isReaction=true;recipeId='ester';}
   else if(bSelected.length===1&&baseName(bSelected[0].name)==='ボツリヌス毒素'){botulinumActive=true;document.getElementById('dot-status').style.display='block';logMessage='毒素';baseDamage=0;}
-  else if(bSelected.length===1&&baseName(bSelected[0].name)==='フッ化水素酸'){gameState.flags.hfUsed=true;if(Math.random()<0.1){isBattleOver=true;document.getElementById('battle-log').innerText='HF自爆 試薬-25';gameState.reagents=Math.max(0,gameState.reagents-25);finalizeReplay();var spentHf=bSelected.slice();bHand=bHand.filter(function(c){return !spentHf.some(function(s){return s.id===c.id;});});spentHf.forEach(function(c){bDiscard.push(Object.assign({},c,{id:uid()}));});bSelected=[];updateBattleUI();autoSave();setTimeout(function(){gameState.playerHP=gameState.playerMaxHP;switchState('field');},1800);return;}baseDamage=Infinity;logMessage=dmgLog('HF',Infinity);checkAchievements();}
+  else if(bSelected.length===1&&baseName(bSelected[0].name)==='フッ化水素酸'){gameState.flags.hfUsed=true;if(Math.random()<0.1){isBattleOver=true;setBattleLog('HF自爆 試薬-25');gameState.reagents=Math.max(0,gameState.reagents-25);finalizeReplay();var spentHf=bSelected.slice();bHand=bHand.filter(function(c){return !spentHf.some(function(s){return s.id===c.id;});});spentHf.forEach(function(c){bDiscard.push(Object.assign({},c,{id:uid()}));});bSelected=[];updateBattleUI();autoSave();setTimeout(function(){gameState.playerHP=gameState.playerMaxHP;switchState('field');},1800);return;}baseDamage=Infinity;logMessage=dmgLog('HF',Infinity);checkAchievements();}
   else if(bSelected.length===1&&(baseName(bSelected[0].name)==='トリニトロトルエン'||baseName(bSelected[0].name)==='ピクリン酸')){baseDamage=bSelected[0].attackPower||180;logMessage=dmgLog(bSelected[0].name,baseDamage);}
   else if(has(n,'水酸化ナトリウム')&&(has(n,'トリパルミチン')||has(n,'トリステアリン')||has(n,'トリオレイン'))){baseDamage=Math.floor(230*catMul);appliedEffect='sapon';logMessage=dmgLog('油脂けん化',baseDamage);markFlag('sapon');markFlag('fat');isReaction=true;recipeId='sapon_fat';}
   else if(has(n,'水酸化ナトリウム')&&(has(n,'酢酸')||has(n,'酢酸エチル')||has(n,'オレイン酸'))){baseDamage=Math.floor(210*catMul);appliedEffect='sapon';logMessage=dmgLog('けん化',baseDamage);markFlag('sapon');isReaction=true;recipeId='sapon';}
@@ -2035,6 +2134,10 @@ function executePlayerAttack(){
   else if(baseDamage>0||baseHeal>0){gameState.nextDamageBonus=1.0;document.getElementById('next-bonus').style.display='none';}
 
   var spent=bSelected.slice();
+  lastSpendBoom=0;
+  spent.forEach(function(c){
+    if((c.origin||c.rarity==='ORIGIN')&&c.boomChance)lastSpendBoom=Math.max(lastSpendBoom,c.boomChance||0);
+  });
   bHand=bHand.filter(function(c){return !spent.some(function(s){return s.id===c.id;});});
   spent.forEach(function(c){bDiscard.push(Object.assign({},c,{id:uid()}));});
   bSelected=[];
@@ -2042,19 +2145,28 @@ function executePlayerAttack(){
   applyEffectAndEndTurn(finalD,baseHeal,logMessage,weakMul>1);
 }
 function chooseAttack(){document.getElementById('choice-box').style.display='none';if(!pendingIntermediate)return;var p=pendingIntermediate;applyEffectAndEndTurn(p.damage,p.heal,p.msg+(p.weak?'\n弱点！':''),p.weak);pendingIntermediate=null;}
-function chooseAddToHand(){document.getElementById('choice-box').style.display='none';if(!pendingIntermediate)return;if(bHand.length<7)bHand.push(pendingIntermediate.card);gameState.collection.push(Object.assign({},pendingIntermediate.card));document.getElementById('battle-log').innerText=pendingIntermediate.card.name+' を手札に（中間体）';maybeShowMidTut();pendingIntermediate=null;isProcessing=false;updateBattleUI();setTimeout(endPlayerTurn,1100);}
+function chooseAddToHand(){document.getElementById('choice-box').style.display='none';if(!pendingIntermediate)return;if(bHand.length<7)bHand.push(pendingIntermediate.card);gameState.collection.push(Object.assign({},pendingIntermediate.card));setBattleLog(pendingIntermediate.card.name+' を手札に（中間体）');maybeShowMidTut();pendingIntermediate=null;isProcessing=false;updateBattleUI();setTimeout(endPlayerTurn,1100);}
 function applyEffectAndEndTurn(damage,heal,message,isWeak){
   if(isBattleOver)return;
+  if(lastSpendBoom>0&&Math.random()*100<lastSpendBoom){
+    var selfDmg=Math.min(60,20+Math.floor(lastSpendBoom/2));
+    gameState.playerHP=Math.max(1,gameState.playerHP-selfDmg);
+    document.getElementById('battle-player-hp').innerText=gameState.playerHP;
+    message+='\n⚠ 不安定分子が分解（自爆）あなたに '+selfDmg+' ダメージ';
+    damage=Math.floor((damage===Infinity?0:damage)*0.35);
+    if(damage>0)message+='\n敵へのダメージも減衰';
+    lastSpendBoom=0;
+  }else{lastSpendBoom=0;}
   var bigCost=25;if(gameState.labLevel>=9)bigCost=20;
   if(damage===Infinity||damage>=400){if(gameState.reagents>=bigCost){gameState.reagents-=bigCost;battleBigSpend=true;message+='\n試薬'+bigCost+'消費';}else if(damage!==Infinity){damage=Math.floor(damage*0.5);message+='\n半減';}}
   if(isWeak)message+='\n弱点！';
   if(damage===Infinity)monsterHP=0;else if(damage>0)monsterHP-=damage;
   if(heal>0){gameState.playerHP=Math.min(gameState.playerMaxHP,gameState.playerHP+heal);document.getElementById('battle-player-hp').innerText=gameState.playerHP;}
   document.getElementById('monster-hp').innerText=Math.max(0,monsterHP);
-  document.getElementById('battle-log').innerText=message;pushHistory(message);
+  setBattleLog(message);pushHistory(message);
   if(monsterHP<=0)winBattle(isPractice?'練習クリア':'敵を分解！');else setTimeout(endPlayerTurn,1400);
 }
-function endPlayerTurn(){if(isBattleOver)return;if(isPractice){startPlayerTurn(false);return;}isPlayerTurn=false;isProcessing=true;document.getElementById('battle-log').innerText='敵の攻撃…';updateBattleUI();setTimeout(function(){if(isBattleOver)return;if(monsterHP>0){var atk=gameState.currentMonster.attackPower||15;if(bossTurnLimit>0&&battleTurnCount>=bossTurnLimit-2)atk=Math.floor(atk*1.5);gameState.playerHP-=atk;document.getElementById('battle-player-hp').innerText=Math.max(0,gameState.playerHP);document.getElementById('battle-log').innerText='敵の攻撃\nあなたに '+atk+' ダメージ！';if(gameState.playerHP<=0){isBattleOver=true;gameState.playerHP=0;gameState.reagents=Math.max(0,gameState.reagents-25);gameState.flags.losses=(gameState.flags.losses||0)+1;document.getElementById('battle-log').innerText='敗北 試薬-25';finalizeReplay();autoSave();setTimeout(function(){gameState.playerHP=gameState.playerMaxHP;switchState('field');},1400);return;}setTimeout(function(){if(!isBattleOver)startPlayerTurn(false);},1100);}else if(!isBattleOver)startPlayerTurn(false);},800);}
+function endPlayerTurn(){if(isBattleOver)return;if(isPractice){startPlayerTurn(false);return;}isPlayerTurn=false;isProcessing=true;setBattleLog('敵の攻撃…');updateBattleUI();setTimeout(function(){if(isBattleOver)return;if(monsterHP>0){var atk=gameState.currentMonster.attackPower||15;if(bossTurnLimit>0&&battleTurnCount>=bossTurnLimit-2)atk=Math.floor(atk*1.5);gameState.playerHP-=atk;document.getElementById('battle-player-hp').innerText=Math.max(0,gameState.playerHP);setBattleLog('敵の攻撃\nあなたに '+atk+' ダメージ！');if(gameState.playerHP<=0){isBattleOver=true;gameState.playerHP=0;gameState.reagents=Math.max(0,gameState.reagents-25);gameState.flags.losses=(gameState.flags.losses||0)+1;setBattleLog('敗北 試薬-25');finalizeReplay();autoSave();setTimeout(function(){gameState.playerHP=gameState.playerMaxHP;switchState('field');},1400);return;}setTimeout(function(){if(!isBattleOver)startPlayerTurn(false);},1100);}else if(!isBattleOver)startPlayerTurn(false);},800);}
 
 function sortDeck(mode){var names=[],seen={};gameState.collection.forEach(function(c){if(!seen[c.name]){seen[c.name]=1;names.push(c.name);}});function rep(name){return gameState.collection.find(function(c){return c.name===name;})||ALL_CARDS.find(function(c){return c.name===baseName(name);});}names.sort(function(a,b){var ca=rep(a),cb=rep(b);if(!ca||!cb)return 0;if(mode==='name')return a.localeCompare(b,'ja');if(mode==='rarity'){var d=(RARITY_ORDER[ca.rarity]||9)-(RARITY_ORDER[cb.rarity]||9);return d||a.localeCompare(b,'ja');}if(mode==='power'){var d2=powerValue(cb)-powerValue(ca);return d2||a.localeCompare(b,'ja');}return a.localeCompare(b,'ja');});gameState.deckListOrder=names.slice();var rebuilt=[];names.forEach(function(name){gameState.currentDeck.filter(function(c){return c.name===name;}).forEach(function(c){rebuilt.push(c);});});gameState.currentDeck=rebuilt;renderDeckEdit();}
 function renderDeckAttrFilters(){
