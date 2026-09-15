@@ -157,32 +157,16 @@ body,html{width:100%;height:100%;overflow:hidden;background:#05080f;color:#e8eef
 
 
 @media (orientation:landscape) and (min-width:700px){
-  .field-ui{padding:10px 12px 0}
-  .status-box{font-size:12px;padding:8px 10px;min-width:120px}
-  .field-btns{max-width:60%}
-  #battle-screen{padding:8px 10px;flex-direction:row;flex-wrap:wrap;align-content:stretch}
-  #battle-screen .battle-header{width:100%;margin-bottom:4px}
-  #lab-canvas-container{width:38%;height:min(28vh,160px);order:2}
-  #battle-log{width:60%;order:3;max-height:28vh;min-height:48px;margin:0 0 0 auto}
-  #battle-screen > div:nth-of-type(3){width:100%;order:4}
-  .battle-actions{width:100%;order:5}
-  .hand-container{max-height:22vh}
-  .card{min-width:72px;width:72px;height:104px}
-  #deck-edit-screen,#zukan-screen,#gacha-screen,#refine-screen,#synth-screen,#lab-screen,#achieve-screen,#tree-screen,#history-screen,#news-screen,#stats-screen,#quiz-only-screen,#isomer-screen,#report-screen{
-    padding:12px 10px 8px
-  }
-  .deck-list{max-height:none;flex:1;min-height:0}
+  #deck-edit-screen,#zukan-screen{padding:12px 10px 8px}
   #deck-edit-screen{overflow:hidden}
   #deck-edit-screen.active{display:flex;flex-direction:column}
-  #zukan-list.scroll-panel,#refine-list.scroll-panel{max-height:none;flex:1}
-  #mol-canvas-wrap{height:min(28vh,180px)}
-  .menu-panel{max-height:90vh}
-  #boss-prep-screen{padding:12px;overflow-y:auto}
+  #deck-edit-screen .deck-list{max-height:none;flex:1;min-height:0}
+  #zukan-screen.active{display:flex;flex-direction:column;overflow:hidden}
+  #zukan-list.scroll-panel{max-height:none;flex:1;min-height:0}
+  #zukan-screen .path-box{max-height:18vh;overflow-y:auto}
 }
 @media (orientation:landscape) and (max-height:500px){
-  #lab-canvas-container{height:22vh}
-  .battle-log-box{max-height:22vh;font-size:11px}
-  .status-box{font-size:11px;padding:6px 8px}
+  #deck-edit-screen,#zukan-screen{padding:8px 10px}
 }
 .ui-select{background:#0f172a;border:1px solid #475569;border-radius:8px;color:#e2e8f0;padding:8px 10px;font-size:12px;min-width:100px}
 .search-input{background:#0f172a;border:1px solid #475569;border-radius:8px;color:#e2e8f0;padding:8px 10px;font-size:12px;flex:1;min-width:120px}
