@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>有機化学バトルフィールド</title>
 <!-- v1.5 save/discard/ux/learn/stats -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -61,7 +61,7 @@ body,html{width:100%;height:100%;overflow:hidden;background:#05080f;color:#e8eef
 #deck-edit-screen,#gacha-screen,#zukan-screen,#achieve-screen,#history-screen,#quiz-only-screen,#isomer-screen,#lab-screen,#refine-screen,#synth-screen,#tree-screen,#boss-prep-screen{
   background:linear-gradient(180deg,#0f172a,#020617);padding:24px 12px 12px;overflow:hidden
 }
-.deck-list{flex:1;overflow-y:auto;max-height:32vh;margin-top:6px}
+.deck-list{flex:1;overflow-y:auto;max-height:48vh;margin-top:6px;min-height:120px}
 .deck-item{display:flex;justify-content:space-between;align-items:center;background:rgba(30,41,59,.85);padding:8px 10px;margin-bottom:5px;border-radius:10px;border:1px solid rgba(71,85,105,.4)}
 .deck-item.in-deck{border-color:rgba(52,211,153,.4);background:rgba(16,185,129,.12)}
 .action-btn{background:none;border:none;font-size:16px;cursor:pointer;padding:4px}
@@ -154,6 +154,39 @@ body,html{width:100%;height:100%;overflow:hidden;background:#05080f;color:#e8eef
 .gacha-rate{font-size:10px;color:#a5b4fc;margin-top:4px}
 #battle-deck-extra{font-size:10px;color:#94a3b8}
 .mol-free-glow{filter:drop-shadow(0 0 4px #38bdf8)}
+
+
+@media (orientation:landscape) and (min-width:700px){
+  .field-ui{padding:10px 12px 0}
+  .status-box{font-size:12px;padding:8px 10px;min-width:120px}
+  .field-btns{max-width:60%}
+  #battle-screen{padding:8px 10px;flex-direction:row;flex-wrap:wrap;align-content:stretch}
+  #battle-screen .battle-header{width:100%;margin-bottom:4px}
+  #lab-canvas-container{width:38%;height:min(28vh,160px);order:2}
+  #battle-log{width:60%;order:3;max-height:28vh;min-height:48px;margin:0 0 0 auto}
+  #battle-screen > div:nth-of-type(3){width:100%;order:4}
+  .battle-actions{width:100%;order:5}
+  .hand-container{max-height:22vh}
+  .card{min-width:72px;width:72px;height:104px}
+  #deck-edit-screen,#zukan-screen,#gacha-screen,#refine-screen,#synth-screen,#lab-screen,#achieve-screen,#tree-screen,#history-screen,#news-screen,#stats-screen,#quiz-only-screen,#isomer-screen,#report-screen{
+    padding:12px 10px 8px
+  }
+  .deck-list{max-height:none;flex:1;min-height:0}
+  #deck-edit-screen{overflow:hidden}
+  #deck-edit-screen.active{display:flex;flex-direction:column}
+  #zukan-list.scroll-panel,#refine-list.scroll-panel{max-height:none;flex:1}
+  #mol-canvas-wrap{height:min(28vh,180px)}
+  .menu-panel{max-height:90vh}
+  #boss-prep-screen{padding:12px;overflow-y:auto}
+}
+@media (orientation:landscape) and (max-height:500px){
+  #lab-canvas-container{height:22vh}
+  .battle-log-box{max-height:22vh;font-size:11px}
+  .status-box{font-size:11px;padding:6px 8px}
+}
+.ui-select{background:#0f172a;border:1px solid #475569;border-radius:8px;color:#e2e8f0;padding:8px 10px;font-size:12px;min-width:100px}
+.search-input{background:#0f172a;border:1px solid #475569;border-radius:8px;color:#e2e8f0;padding:8px 10px;font-size:12px;flex:1;min-width:120px}
+#react-memo-modal{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:90%;max-width:400px;max-height:75vh;overflow-y:auto;background:rgba(15,23,42,.98);border:1px solid #fbbf24;border-radius:16px;padding:16px;z-index:120}
 
 </style>
 </head>
@@ -345,17 +378,20 @@ body,html{width:100%;height:100%;overflow:hidden;background:#05080f;color:#e8eef
 </div>
 <div id="zukan-screen" class="screen">
   <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="color:#fbbf24">📘 暗記シート (<span id="zukan-count">0</span>)</h3><button type="button" class="glass-btn slate" onclick="goBackFromMenu()">戻る</button></div>
-  <div class="filter-row">
-    <button type="button" class="glass-btn mini-btn slate" onclick="setZukanFilter('all')">全て</button>
-    <button type="button" class="glass-btn mini-btn slate" onclick="setZukanFilter('SSSR')">SSSR</button>
-    <button type="button" class="glass-btn mini-btn slate" onclick="setZukanFilter('SSR')">SSR</button>
-    <button type="button" class="glass-btn mini-btn slate" onclick="setZukanFilter('SR')">SR</button>
-    <button type="button" class="glass-btn mini-btn slate" onclick="setZukanFilter('R')">R</button>
-    <button type="button" class="glass-btn mini-btn slate" onclick="setZukanFilter('ORIGIN')">オリジン</button>
-    <button type="button" class="glass-btn mini-btn slate" onclick="setZukanFilter('unowned')">未所持</button>
-    <button type="button" class="glass-btn mini-btn primary" onclick="startMemoMode()">暗記モード</button>
-    <button type="button" class="glass-btn mini-btn pink" onclick="startReactQuiz()">反応クイズ</button>
-    <button type="button" class="glass-btn mini-btn warn" onclick="startReviewQuiz()">復習リスト</button>
+  <div class="filter-row" style="align-items:center">
+    <input id="zukan-search" class="search-input" placeholder="名前検索" oninput="onZukanSearch()">
+    <select id="zukan-filter-select" class="ui-select" onchange="onZukanFilterChange()">
+      <option value="all">全て</option>
+      <option value="SSSR">SSSR</option>
+      <option value="SSR">SSR</option>
+      <option value="SR">SR</option>
+      <option value="R">R</option>
+      <option value="ORIGIN">オリジン</option>
+      <option value="unowned">未所持</option>
+    </select>
+    <button type="button" class="glass-btn mini-btn primary" onclick="startMemoMode()">暗記</button>
+    <button type="button" class="glass-btn mini-btn pink" onclick="startReactQuiz()">反応Q</button>
+    <button type="button" class="glass-btn mini-btn warn" onclick="startReviewQuiz()">復習</button>
   </div>
   <div id="path-diagram" class="path-box" style="display:none"></div>
   <div id="attr-comp-box" style="font-size:11px;color:#94a3b8;margin:6px 0"></div>
@@ -377,13 +413,22 @@ body,html{width:100%;height:100%;overflow:hidden;background:#05080f;color:#e8eef
     <div><h3 style="font-size:16px">デッキ編集 (<span id="deck-count">0</span>/50)</h3><p style="font-size:11px;color:#94a3b8">最低20 / 最大50</p></div>
     <div class="row-btns">
       <button type="button" class="glass-btn mini-btn warn" onclick="openRecommendModal()">おすすめ</button>
-      <button type="button" class="glass-btn mini-btn slate" onclick="sortDeck('name')">名前</button>
-      <button type="button" class="glass-btn mini-btn slate" onclick="sortDeck('rarity')">レア</button>
-      <button type="button" class="glass-btn mini-btn slate" onclick="sortDeck('power')">火力</button>
+      <button type="button" class="glass-btn mini-btn slate" onclick="openReactMemoModal()">反応一覧</button>
       <button type="button" id="deck-done-btn" class="glass-btn success" onclick="finishDeckEdit()">完了</button>
     </div>
   </div>
-  <div class="filter-row" id="deck-attr-filters"></div>
+  <div class="filter-row" style="align-items:center">
+    <input id="deck-search" class="search-input" placeholder="名前検索" oninput="onDeckSearch()">
+    <select id="deck-sort-select" class="ui-select" onchange="onDeckSortChange()">
+      <option value="name">並び: 名前</option>
+      <option value="rarity">並び: レア</option>
+      <option value="power">並び: 火力</option>
+    </select>
+    <select id="deck-attr-select" class="ui-select" onchange="onDeckAttrChange()">
+      <option value="all">属性: 全て</option>
+    </select>
+  </div>
+  <div class="filter-row" id="deck-attr-filters" style="display:none"></div>
   <div class="preset-row"><input id="preset-name-0" placeholder="スロット1" maxlength="12"><button type="button" class="glass-btn mini-btn primary" onclick="saveDeckSlot(0)">保存1</button><button type="button" class="glass-btn mini-btn primary" onclick="loadDeckSlot(0)">読込1</button></div>
   <div class="preset-row"><input id="preset-name-1" placeholder="スロット2" maxlength="12"><button type="button" class="glass-btn mini-btn primary" onclick="saveDeckSlot(1)">保存2</button><button type="button" class="glass-btn mini-btn primary" onclick="loadDeckSlot(1)">読込2</button></div>
   <div class="preset-row"><input id="preset-name-2" placeholder="スロット3" maxlength="12"><button type="button" class="glass-btn mini-btn primary" onclick="saveDeckSlot(2)">保存3</button><button type="button" class="glass-btn mini-btn primary" onclick="loadDeckSlot(2)">読込3</button></div>
@@ -394,8 +439,12 @@ body,html{width:100%;height:100%;overflow:hidden;background:#05080f;color:#e8eef
     <div class="synth-bar-bg"><div id="synth-rate-bar" class="synth-bar-fill" style="width:0%"></div></div>
     <div id="synth-hint" style="font-size:10px;color:#94a3b8;margin-top:5px"></div>
   </div>
-  <div id="deck-list" class="deck-list"></div>
-  <div class="info-box" style="max-height:14vh"><div style="color:#fbbf24;margin-bottom:4px">📖 反応メモ</div><div id="deck-reaction-list" style="white-space:pre-line;font-size:11px;color:#cbd5e1"></div></div>
+  <div id="deck-list" class="deck-list" style="flex:1;min-height:0;max-height:none"></div>
+</div>
+<div id="react-memo-modal">
+  <div style="color:#fbbf24;font-size:15px;margin-bottom:8px">📖 反応一覧</div>
+  <div id="deck-reaction-list" style="white-space:pre-line;font-size:12px;color:#cbd5e1;line-height:1.55"></div>
+  <button type="button" class="glass-btn slate wide" style="margin-top:12px" onclick="closeReactMemoModal()">閉じる</button>
 </div>
 <div id="gacha-screen" class="screen" style="overflow-y:auto;align-items:stretch">
   <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
@@ -675,7 +724,7 @@ const ISOMER_BANK=[
 const RARITY_ORDER={SSSR:0,SSR:1,SR:2,R:3,ORIGIN:2};
 const GACHA_TYPES=[
 {id:"normal",name:"通常ガチャ",cost:100,desc:"全カード",rates:function(b){return{SSSR:0.1+b*0.15,SSR:2.9+b,SR:15+b*2,R:100};},pool:function(){return ALL_CARDS.slice();}},
-{id:"cheap",name:"量産ガチャ",cost:40,desc:"R・SR",rates:function(){return{SR:25,R:100};},pool:function(){return ALL_CARDS.filter(function(c){return c.rarity==='R'||c.rarity==='SR';});}},
+{id:"cheap",name:"量産ガチャ",cost:60,desc:"R・SR",rates:function(){return{SR:25,R:100};},pool:function(){return ALL_CARDS.filter(function(c){return c.rarity==='R'||c.rarity==='SR';});}},
 {id:"aromatic",name:"芳香族ガチャ",cost:120,desc:"芳香族",rates:function(b){return{SSR:5+b,SR:30,R:100};},pool:function(){return ALL_CARDS.filter(function(c){return ['Aromatic','Phenol','Reagent','FunctionalGroup'].indexOf(c.attribute)>=0;});}},
 {id:"alcohol",name:"アルコール・酸ガチャ",cost:110,desc:"酸・アルコ",rates:function(b){return{SSR:4+b,SR:28,R:100};},pool:function(){return ALL_CARDS.filter(function(c){return ['Alcohol','Acid','Ester','Oxidant','Aldehyde','Ketone','Base'].indexOf(c.attribute)>=0;});}},
 {id:"poly",name:"重合・付加ガチャ",cost:130,desc:"オレフィン",rates:function(b){return{SSR:8+b,SR:35,R:100};},pool:function(){return ALL_CARDS.filter(function(c){return ['Alkenyl','Alkynyl','Halogen','Catalyst','Hydrocarbon'].indexOf(c.attribute)>=0;});}},
@@ -812,7 +861,7 @@ var gameState={
 };
 var returnToMenu=false,menuOpen=false,isBattleOver=false,isProcessing=false,botulinumActive=false,isPractice=false,gachaBusy=false;
 var pendingIntermediate=null,fromBattleToHistory=false,returnToBossPrep=false;
-var battleHistory=[],battleTurnCount=0,bossTurnLimit=0,comboCount=0,zukanFilter='all',deckAttrFilter='all';
+var battleHistory=[],battleTurnCount=0,bossTurnLimit=0,comboCount=0,zukanFilter='all',deckAttrFilter='all',deckSearchQuery='',zukanSearchQuery='';
 var battleUsedCatalyst=false,battleBigSpend=false,battleAttrsUsed={},battleOriginCount=0;
 var qoScore=0,qoTotal=0,isoScore=0,isoStreak=0;
 var bDeck=[],bHand=[],bDiscard=[],bSelected=[],monsterHP=500,isPlayerTurn=true;var battleReactionsUsed=[];var tutIndex=0;var lastSpendBoom=0;
@@ -1585,15 +1634,22 @@ function finishGachaPull(g,res){
 
 function setZukanFilter(f){zukanFilter=f;renderZukan();}
 function getZukanNames(){
+  var names;
   if(zukanFilter==='unowned'){
     var owned={};gameState.collection.forEach(function(c){owned[baseName(c.name)]=1;});
-    return ALL_CARDS.filter(function(c){return !owned[c.name];}).map(function(c){return c.name;}).sort(function(a,b){return a.localeCompare(b,'ja');});
+    names=ALL_CARDS.filter(function(c){return !owned[c.name];}).map(function(c){return c.name;});
+  }else{
+    names=[];var seen={};gameState.collection.forEach(function(c){if(!seen[c.name]){seen[c.name]=1;names.push(c.name);}});
+    names=names.filter(function(name){
+      var c=gameState.collection.find(function(x){return x.name===name;})||ALL_CARDS.find(function(x){return x.name===baseName(name);});
+      if(!c)return false;if(zukanFilter==='all')return true;return c.rarity===zukanFilter;
+    });
   }
-  var names=[],seen={};gameState.collection.forEach(function(c){if(!seen[c.name]){seen[c.name]=1;names.push(c.name);}});
-  return names.filter(function(name){
-    var c=gameState.collection.find(function(x){return x.name===name;})||ALL_CARDS.find(function(x){return x.name===baseName(name);});
-    if(!c)return false;if(zukanFilter==='all')return true;return c.rarity===zukanFilter;
-  }).sort(function(a,b){return a.localeCompare(b,'ja');});
+  if(zukanSearchQuery){
+    var q=zukanSearchQuery.toLowerCase();
+    names=names.filter(function(name){return String(name).toLowerCase().indexOf(q)>=0;});
+  }
+  return names.sort(function(a,b){return a.localeCompare(b,'ja');});
 }
 function renderAttrComp(){
   var box=document.getElementById('attr-comp-box');if(!box)return;
@@ -1951,27 +2007,44 @@ function canPairReact(nameA,nameB){
 }
 function predictReactionLabel(names){
   var n=names;
+  var unique=[];n.forEach(function(x){if(unique.indexOf(x)<0)unique.push(x);});
   function has(x){return n.indexOf(x)>=0;}
   if(has('アニリン')&&has('無水酢酸'))return{ok:true,label:'アセチル化 → アセトアニリド'};
   if(has('サリチル酸')&&has('無水酢酸'))return{ok:true,label:'アセチル化 → アスピリン'};
-  if(has('エタノール')&&has('濃硫酸'))return{ok:true,label:'脱水 → アルケン'};
+  if((has('エタノール')||has('1-プロパノール'))&&has('濃硫酸'))return{ok:true,label:'脱水 → アルケン'};
   if(has('ベンゼン')&&has('ニトロ基'))return{ok:true,label:'ニトロベンゼン生成'};
   if(has('ニトロベンゼン')&&(has('還元剤')||has('水素化ホウ素ナトリウム')))return{ok:true,label:'還元 → アニリン'};
   if(has('アニリン')&&has('ジアゾ化剤'))return{ok:true,label:'アゾ化'};
   if(has('酢酸')&&has('エタノール'))return{ok:true,label:'エステル化'};
-  if(has('水酸化ナトリウム')&&(has('酢酸')||has('酢酸エチル')||has('オレイン酸')||has('トリパルミチン')||has('トリステアリン')||has('トリオレイン')))return{ok:true,label:'けん化'};
+  if(has('水酸化ナトリウム')&&(has('トリパルミチン')||has('トリステアリン')||has('トリオレイン')))return{ok:true,label:'油脂けん化'};
+  if(has('水酸化ナトリウム')&&(has('酢酸')||has('酢酸エチル')||has('オレイン酸')))return{ok:true,label:'けん化'};
   if(has('ベンゼン')&&has('濃硝酸'))return{ok:true,label:'ニトロ化'};
   if(has('トルエン')&&has('濃硝酸'))return{ok:true,label:'ニトロ化（高火力）'};
   if(has('フェノール')&&has('濃硝酸'))return{ok:true,label:'ニトロ化'};
-  if(has('ベンゼン')&&has('濃硫酸'))return{ok:true,label:'スルホン化'};
+  if((has('ベンゼン')||has('ナフタレン'))&&has('濃硫酸'))return{ok:true,label:'スルホン化'};
+  if(has('ナフタレン')&&has('濃硝酸'))return{ok:true,label:'ニトロ化'};
+  if(has('アントラセン')&&has('濃硝酸'))return{ok:true,label:'ニトロ化'};
+  if(has('ベンゼン')&&(has('塩素')||has('臭素'))&&(has('鉄')||has('塩化アルミニウム')||has('濃硫酸')||has('重合触媒(Ziegler)')))return{ok:true,label:'ハロゲン化'};
   if(has('エチレン')&&(has('塩素')||has('臭素')))return{ok:true,label:'付加'};
+  if(has('アセチレン')&&has('臭素'))return{ok:true,label:'付加'};
+  if((has('シス-2-ブテン')||has('トランス-2-ブテン'))&&has('臭素'))return{ok:true,label:'付加'};
   if((has('エチレン')||has('スチレン')||has('プロピレン')||has('ビニル基'))&&has('重合触媒(Ziegler)'))return{ok:true,label:'重合'};
-  if((has('エタノール')||has('メタノール')||has('アセトアルデヒド')||has('2-プロパノール'))&&(has('過マンガン酸カリウム')||has('二クロム酸カリウム')))return{ok:true,label:'酸化'};
+  if((has('エタノール')||has('メタノール')||has('アセトアルデヒド')||has('2-プロパノール')||has('1-プロパノール'))&&(has('過マンガン酸カリウム')||has('二クロム酸カリウム')))return{ok:true,label:'酸化'};
   if(has('トルエン')&&has('過マンガン酸カリウム'))return{ok:true,label:'側鎖酸化'};
-  if((has('エタノール')||has('メタノール')||has('フェノール'))&&has('金属ナトリウム'))return{ok:true,label:'アルコキシド/フェノキシド'};
-  if(has('フェニル基')&&(has('ヒドロキシ基')||has('ニトロ基')||has('カルボキシ基')))return{ok:true,label:'官能基置換'};
-  if(n.length===1)return{ok:true,label:'単体投擲/使用'};
+  if((has('エタノール')||has('メタノール')||has('1-プロパノール'))&&has('金属ナトリウム'))return{ok:true,label:'アルコキシド'};
+  if(has('フェノール')&&has('金属ナトリウム'))return{ok:true,label:'フェノキシド'};
+  if((has('メチル基')||has('エチル基')||has('フェニル基'))&&has('ヒドロキシ基'))return{ok:true,label:'アルコール/フェノール生成'};
+  if(has('フェニル基')&&has('ニトロ基'))return{ok:true,label:'ニトロベンゼン生成'};
+  if(has('フェニル基')&&has('カルボキシ基'))return{ok:true,label:'安息香酸生成'};
+  if(unique.length===1)return{ok:true,label:'単体投擲/使用（×'+n.length+'）'};
   if(n.length===0)return{ok:false,label:'カードを選択'};
+  // ハイライト用ペアが成立していれば反応候補として表示
+  for(var i=0;i<SYNTH_PAIRS.length;i++){
+    var p=SYNTH_PAIRS[i];
+    var hasA=p.a.some(function(x){return has(x);});
+    var hasB=p.b.some(function(x){return has(x);});
+    if(hasA&&hasB)return{ok:true,label:'反応可能（合成ペア）'};
+  }
   return{ok:false,label:'この組み合わせは反応なし（不活性）'};
 }
 function updateReactPreview(){
@@ -2203,14 +2276,18 @@ function endPlayerTurn(){if(isBattleOver)return;if(isPractice){startPlayerTurn(f
 
 function sortDeck(mode){var names=[],seen={};gameState.collection.forEach(function(c){if(!seen[c.name]){seen[c.name]=1;names.push(c.name);}});function rep(name){return gameState.collection.find(function(c){return c.name===name;})||ALL_CARDS.find(function(c){return c.name===baseName(name);});}names.sort(function(a,b){var ca=rep(a),cb=rep(b);if(!ca||!cb)return 0;if(mode==='name')return a.localeCompare(b,'ja');if(mode==='rarity'){var d=(RARITY_ORDER[ca.rarity]||9)-(RARITY_ORDER[cb.rarity]||9);return d||a.localeCompare(b,'ja');}if(mode==='power'){var d2=powerValue(cb)-powerValue(ca);return d2||a.localeCompare(b,'ja');}return a.localeCompare(b,'ja');});gameState.deckListOrder=names.slice();var rebuilt=[];names.forEach(function(name){gameState.currentDeck.filter(function(c){return c.name===name;}).forEach(function(c){rebuilt.push(c);});});gameState.currentDeck=rebuilt;renderDeckEdit();}
 function renderDeckAttrFilters(){
-  var box=document.getElementById('deck-attr-filters');if(!box)return;box.innerHTML='';
-  DECK_ATTR_FILTERS.forEach(function(a){
-    var b=document.createElement('button');b.type='button';
-    b.className='glass-btn mini-btn filter-chip slate'+(deckAttrFilter===a?' on':'');
-    b.innerText=a==='all'?'全て':attrLabel(a);
-    b.onclick=function(){deckAttrFilter=a;renderDeckAttrFilters();renderDeckEdit();};
-    box.appendChild(b);
-  });
+  var sel=document.getElementById('deck-attr-select');
+  if(sel){
+    var cur=deckAttrFilter||'all';
+    sel.innerHTML='';
+    DECK_ATTR_FILTERS.forEach(function(a){
+      var o=document.createElement('option');
+      o.value=a;o.innerText=a==='all'?'属性: 全て':('属性: '+attrLabel(a));
+      if(a===cur)o.selected=true;
+      sel.appendChild(o);
+    });
+  }
+  var box=document.getElementById('deck-attr-filters');if(box)box.innerHTML='';
 }
 function renameOriginCard(oldName){
   if(gameState.reagents<25){alert('試薬が足りません（25必要）');return;}
@@ -2240,7 +2317,7 @@ function renderDeckAttrGraph(){
 }
 function renderDeckEdit(){
   document.getElementById('deck-count').innerText=gameState.currentDeck.length;
-  document.getElementById('deck-reaction-list').innerText=FULL_REACTION_TEXT;
+  var dr=document.getElementById('deck-reaction-list');if(dr)dr.innerText=FULL_REACTION_TEXT;
   renderDeckAttrGraph();
   for(var i=0;i<3;i++){var inp=document.getElementById('preset-name-'+i);if(inp&&gameState.deckSlots[i])inp.value=gameState.deckSlots[i].name||'';}
   document.getElementById('preset-labels').innerText=[0,1,2].map(function(i){var s=gameState.deckSlots[i];return(s&&s.cards&&s.cards.length)?('S'+(i+1)+':'+(s.name||'無題')+'('+s.cards.length+')'):('S'+(i+1)+':空');}).join(' / ');
@@ -2254,6 +2331,10 @@ function renderDeckEdit(){
       if(deckAttrFilter==='ORIGIN')return card.rarity==='ORIGIN'||card.origin;
       return card.attribute===deckAttrFilter;
     });
+  }
+  if(deckSearchQuery){
+    var q=deckSearchQuery.toLowerCase();
+    ordered=ordered.filter(function(name){return String(name).toLowerCase().indexOf(q)>=0;});
   }
   var list=document.getElementById('deck-list');list.innerHTML='';
   ordered.forEach(function(name){
