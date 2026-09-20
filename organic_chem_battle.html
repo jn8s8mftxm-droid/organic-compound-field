@@ -402,7 +402,7 @@ body,html{width:100%;height:100%;overflow:hidden;background:#05080f;color:#e8eef
     </div>
   </div>
   <div class="filter-row" style="align-items:center">
-    <input id="deck-search" class="search-input" placeholder="名前検索" oninput="onDeckSearch()">
+    <input id="deck-search" class="search-input" placeholder="名前検索" oninput="onDeckSearch()" onkeyup="onDeckSearch()" onchange="onDeckSearch()">
     <select id="deck-sort-select" class="ui-select" onchange="onDeckSortChange()">
       <option value="name">並び: 名前</option>
       <option value="rarity">並び: レア</option>
@@ -559,7 +559,25 @@ const ALL_CARDS=[
 {name:"ボツリヌス毒素",formula:"BoNT",attackPower:0,healPower:0,attribute:"Toxin",rarity:"SSSR"},
 {name:"ビタミンC",formula:"C6H8O6",attackPower:70,healPower:55,attribute:"Nutrient",rarity:"SSR"},
 {name:"サリチル酸メチル",formula:"C8H8O3",attackPower:85,healPower:40,attribute:"Ester",rarity:"SSR"},
-{name:"カフェイン",formula:"C8H10N4O2",attackPower:90,healPower:35,attribute:"Aromatic",rarity:"SSR"}
+{name:"カフェイン",formula:"C8H10N4O2",attackPower:90,healPower:35,attribute:"Aromatic",rarity:"SSR"},
+
+{name:"ベンズアルデヒド",formula:"C6H5CHO",attackPower:40,healPower:0,attribute:"Aldehyde",rarity:"SR"},
+{name:"ベンジルアルコール",formula:"C6H5CH2OH",attackPower:32,healPower:0,attribute:"Alcohol",rarity:"R"},
+{name:"シクロヘキサン",formula:"C6H12",attackPower:28,healPower:0,attribute:"Alkane",rarity:"R"},
+{name:"ベンゼンスルホン酸",formula:"C6H5SO3H",attackPower:55,healPower:0,attribute:"Acid",rarity:"SR"},
+{name:"ベンゼンスルホン酸ナトリウム",formula:"C6H5SO3Na",attackPower:50,healPower:0,attribute:"Salt",rarity:"SR"},
+{name:"ナトリウムフェノキシド",formula:"C6H5ONa",attackPower:60,healPower:0,attribute:"Phenol",rarity:"SR"},
+{name:"クロロベンゼン",formula:"C6H5Cl",attackPower:50,healPower:0,attribute:"Aromatic",rarity:"SR"},
+{name:"クメン",formula:"C6H5CH(CH3)2",attackPower:48,healPower:0,attribute:"Aromatic",rarity:"SR"},
+{name:"クメンヒドロペルオキシド",formula:"C9H12O2",attackPower:70,healPower:0,attribute:"Peroxide",rarity:"SR"},
+{name:"ニトロトルエン",formula:"CH3C6H4NO2",attackPower:75,healPower:0,attribute:"Aromatic",rarity:"SR"},
+{name:"ジニトロトルエン",formula:"CH3C6H3(NO2)2",attackPower:120,healPower:0,attribute:"Aromatic",rarity:"SSR"},
+{name:"塩化ベンゼンジアゾニウム",formula:"C6H5N2Cl",attackPower:80,healPower:0,attribute:"Aromatic",rarity:"SR"},
+{name:"p-フェニルアゾフェノール",formula:"HOC6H4N=NC6H5",attackPower:115,healPower:0,attribute:"Aromatic",rarity:"SSR"},
+{name:"トリブロモフェノール",formula:"C6H3Br3OH",attackPower:95,healPower:0,attribute:"Phenol",rarity:"SR"},
+{name:"二酸化炭素",formula:"CO2",attackPower:20,healPower:0,attribute:"Reagent",rarity:"R"},
+{name:"水素",formula:"H2",attackPower:15,healPower:0,attribute:"Reagent",rarity:"R"},
+{name:"塩化メチル",formula:"CH3Cl",attackPower:30,healPower:0,attribute:"Halogen",rarity:"R"},
 ];
 
 const RANK_BY_LEVEL=[
@@ -596,20 +614,42 @@ const REACTION_TREE=[
 {id:"na_alc",name:"アルコキシド",path:"アルコール + Na",chain:"金属Na",reward:25},
 {id:"na_ph",name:"フェノキシド",path:"フェノール + Na",chain:"金属Na",reward:25},
 {id:"fg_oh",name:"基＋OH",path:"炭化水素基 + OH",chain:"官能基",reward:20},
-{id:"fg_no2",name:"基＋NO2",path:"フェニル + ニトロ基",chain:"官能基",reward:25}
+{id:"fg_no2",name:"基＋NO2",path:"フェニル + ニトロ基",chain:"官能基",reward:25},
+{id:"sulf_bz",name:"スルホン化→スルホン酸",path:"ベンゼン + 濃硫酸 → ベンゼンスルホン酸",chain:"フェノール経路",reward:30},
+{id:"sulf_na",name:"スルホン酸の中和",path:"ベンゼンスルホン酸 + NaOH → スルホン酸塩",chain:"フェノール経路",reward:25},
+{id:"alkali_fuse",name:"アルカリ融解",path:"スルホン酸塩 + NaOH → フェノキシド",chain:"フェノール経路",reward:35},
+{id:"ph_free",name:"フェノール遊離",path:"フェノキシド + 酸 → フェノール",chain:"フェノール経路",reward:30},
+{id:"picric",name:"ピクリン酸合成",path:"フェノール + 濃硝酸 → ピクリン",chain:"フェノール経路",reward:40},
+{id:"chloro_bz",name:"塩素化",path:"ベンゼン + 塩素 + 触媒 → クロロベンゼン",chain:"芳香族",reward:30},
+{id:"cumene",name:"クメン法",path:"ベンゼン + プロピレン → クメン",chain:"クメン法",reward:30},
+{id:"cumene_ox",name:"クメン酸化",path:"クメン + 酸化剤 → ヒドロペルオキシド",chain:"クメン法",reward:30},
+{id:"cumene_split",name:"クメン分解",path:"ヒドロペルオキシド → フェノール",chain:"クメン法",reward:35},
+{id:"kolbe",name:"コルベ・シュミット",path:"フェノール + CO2 → サリチル酸",chain:"サリチル",reward:40},
+{id:"methyl_sal",name:"サリチル酸メチル",path:"サリチル酸 + メタノール",chain:"サリチル",reward:30},
+{id:"bromo_ph",name:"トリブロモフェノール",path:"フェノール + 臭素",chain:"フェノール経路",reward:30},
+{id:"nitro_tol_p",name:"ニトロトルエン",path:"トルエン + 濃硝酸 → ニトロトルエン",chain:"TNT経路",reward:30},
+{id:"dinitro_tol",name:"ジニトロトルエン",path:"ニトロトルエン + 濃硝酸",chain:"TNT経路",reward:35},
+{id:"tnt_path",name:"TNT合成",path:"ジニトロトルエン + 濃硝酸",chain:"TNT経路",reward:45},
+{id:"diazo_salt",name:"ジアゾ化",path:"アニリン + ジアゾ化剤 → ジアゾニウム",chain:"中間体連鎖",reward:30},
+{id:"azo_ph",name:"アゾカップリング",path:"ジアゾニウム + フェノール",chain:"中間体連鎖",reward:40},
+{id:"bz_h2",name:"ベンゼン水素化",path:"ベンゼン + H2 → シクロヘキサン",chain:"芳香族",reward:25},
+{id:"alkyl_bz",name:"アルキル化",path:"ベンゼン + 塩化メチル + AlCl3",chain:"芳香族",reward:30},
+{id:"bz_ald_ox",name:"ベンズアルデヒド酸化",path:"ベンズアルデヒド → 安息香酸",chain:"酸化",reward:30},
+{id:"bz_alc_ox",name:"ベンジルアルコール酸化",path:"ベンジルアルコール → 安息香酸",chain:"酸化",reward:30},
+{id:"benzoate",name:"側鎖酸化（生成）",path:"トルエン + KMnO4 → 安息香酸",chain:"酸化",reward:35},
 ];
-const INTERMEDIATE_NAMES=["ニトロベンゼン","アニリン","アゾベンゼン","酢酸エチル","アセトアニリド","アセチルサリチル酸"];
+const INTERMEDIATE_NAMES=["ニトロベンゼン","アニリン","アゾベンゼン","酢酸エチル","アセトアニリド","アセチルサリチル酸","ベンゼンスルホン酸","ベンゼンスルホン酸ナトリウム","ナトリウムフェノキシド","クロロベンゼン","クメン","クメンヒドロペルオキシド","ニトロトルエン","ジニトロトルエン","塩化ベンゼンジアゾニウム","p-フェニルアゾフェノール","トリブロモフェノール","安息香酸","フェノール","サリチル酸","サリチル酸メチル","ピクリン酸","トリニトロトルエン","アセトン"];
 const CARD_REACT_FULL={
-"ベンゼン":"・+ニトロ基 → ニトロベンゼン（中間体）\n・+濃硝酸 → ニトロ化\n・+濃硫酸 → スルホン化\n・+塩素/臭素+触媒 → ハロゲン化",
-"トルエン":"・+濃硝酸 → ニトロ化（高火力）\n・+KMnO4 → 側鎖酸化→安息香酸系",
-"フェノール":"・+濃硝酸 → ニトロ化\n・+金属Na → フェノキシド",
-"アニリン":"・+ジアゾ化剤 → アゾベンゼン\n・+無水酢酸 → アセトアニリド\n（ニトロベンゼン還元の先）",
+"ベンゼン":"・+濃硝酸/濃硫酸 → ニトロベンゼン\n・+濃硫酸 → ベンゼンスルホン酸\n・+塩素+触媒 → クロロベンゼン\n・+プロピレン+触媒 → クメン\n・+H2+触媒 → シクロヘキサン\n・+塩化メチル+AlCl3 → アルキル化",
+"トルエン":"・+濃硝酸 → ニトロトルエン（連鎖可）\n・+KMnO4 → 安息香酸\n・側鎖酸化が重要",
+"フェノール":"・+濃硝酸 → ピクリン酸\n・+臭素 → トリブロモフェノール\n・+CO2 → サリチル酸（コルベ）\n・+金属Na → フェノキシド\n・ジアゾニウムとアゾカップリング",
+"アニリン":"・+ジアゾ化剤 → 塩化ベンゼンジアゾニウム\n・+無水酢酸 → アセトアニリド\n（ニトロベンゼン還元の先）",
 "ニトロベンゼン":"・+還元剤/NaBH4 → アニリン\n（ベンゼン+ニトロ基の先）",
 "アゾベンゼン":"・アニリン+ジアゾ化の最終生成物\n・単体でも投擲可",
 "酢酸":"・+エタノール → 酢酸エチル（エステル化）\n・+NaOH → けん化",
 "エタノール":"・+酢酸 → エステル化\n・+濃硫酸 → 脱水\n・+金属Na → アルコキシド\n・+酸化剤 → 酸化",
 "酢酸エチル":"・+NaOH → けん化\n（エステル化の生成物・中間体）",
-"サリチル酸":"・+無水酢酸 → アセチルサリチル酸",
+"サリチル酸":"・+無水酢酸 → アセチルサリチル酸\n・+メタノール+濃硫酸 → サリチル酸メチル",
 "無水酢酸":"・+アニリン → アセトアニリド\n・+サリチル酸 → アスピリン",
 "濃硝酸":"・芳香族（ベンゼン/トルエン/フェノール等）とニトロ化\n・触媒ではなく試薬として消費",
 "濃硫酸":"・エステル化・脱水の触媒（倍率2.0）\n・芳香族スルホン化の試薬",
@@ -634,6 +674,21 @@ const CARD_REACT_FULL={
 "スチレン":"・+Ziegler → 重合","プロピレン":"・+Ziegler → 重合","ビニル基":"・+Ziegler → 重合",
 "ナフタレン":"・+濃硫酸 スルホン化 / +濃硝酸 ニトロ化","アントラセン":"・+濃硝酸 ニトロ化",
 "1-プロパノール":"・+濃硫酸 脱水 / +Na / 酸化","2-プロパノール":"・酸化でケトン","メタノール":"・+Na / 酸化",
+
+"ベンゼンスルホン酸":"・+NaOH → ベンゼンスルホン酸ナトリウム\n・ベンゼンのスルホン化生成物",
+"ベンゼンスルホン酸ナトリウム":"・+NaOH（アルカリ融解）→ ナトリウムフェノキシド",
+"ナトリウムフェノキシド":"・+濃硫酸/酸 → フェノール（弱酸の遊離）",
+"クロロベンゼン":"・ベンゼンの塩素化生成物",
+"クメン":"・+酸化剤 → クメンヒドロペルオキシド\n・ベンゼン+プロピレンから",
+"クメンヒドロペルオキシド":"・分解 → フェノール（+アセトン）",
+"ニトロトルエン":"・+濃硝酸 → ジニトロトルエン → TNTへ",
+"ジニトロトルエン":"・+濃硝酸 → トリニトロトルエン(TNT)",
+"塩化ベンゼンジアゾニウム":"・+フェノール → p-フェニルアゾフェノール（カップリング）",
+"ベンズアルデヒド":"・+酸化剤 → 安息香酸",
+"ベンジルアルコール":"・+酸化剤 → 安息香酸/アルデヒド",
+"二酸化炭素":"・フェノールとコルベ・シュミット → サリチル酸",
+"水素":"・ベンゼン+触媒で水素化 → シクロヘキサン",
+"塩化メチル":"・ベンゼン+AlCl3でアルキル化",
 "アセトアルデヒド":"・酸化でカルボン酸へ","オレイン酸":"・+NaOH けん化"
 };
 const ACHIEVEMENTS=[
@@ -691,7 +746,7 @@ const ACHIEVEMENTS=[
 ];
 const DAILY_QUESTS=[{key:"nitro",label:"ニトロ化を1回"},{key:"sapon",label:"けん化を1回"},{key:"poly",label:"重合を1回"},{key:"ester",label:"エステル化を1回"},{key:"oxid",label:"酸化を1回"},{key:"acetyl",label:"アセチル化を1回"},{key:"dehyd",label:"脱水を1回"}];
 const FULL_REACTION_TEXT="中間体連鎖でコンボ増加（生成物を手札に加え、次の反応に使う）\nベンゼン+ニトロ基→ニトロベンゼン→還元→アニリン→アゾ/アセチル\n酢酸+エタノール→酢酸エチル→けん化\n触媒なし1.5/あり2.0 弱点1.5 精製×1.15";
-const SYNTH_PAIRS=[{a:["ベンゼン"],b:["ニトロ基","濃硝酸","濃硫酸","塩素","臭素"]},{a:["トルエン"],b:["濃硝酸","過マンガン酸カリウム"]},{a:["フェノール"],b:["濃硝酸","金属ナトリウム"]},{a:["アニリン"],b:["ジアゾ化剤","無水酢酸"]},{a:["ニトロベンゼン"],b:["還元剤","水素化ホウ素ナトリウム"]},{a:["酢酸"],b:["エタノール","水酸化ナトリウム"]},{a:["エタノール"],b:["酢酸","濃硫酸","金属ナトリウム","過マンガン酸カリウム"]},{a:["エチレン"],b:["塩素","臭素","重合触媒(Ziegler)"]},{a:["スチレン","プロピレン"],b:["重合触媒(Ziegler)"]},{a:["サリチル酸"],b:["無水酢酸"]},{a:["トリパルミチン","トリステアリン","トリオレイン","オレイン酸","酢酸エチル"],b:["水酸化ナトリウム"]},{a:["メチル基","エチル基","フェニル基","ビニル基"],b:["ヒドロキシ基","カルボキシ基","アミノ基","ニトロ基"]}];
+const SYNTH_PAIRS=[{a:["ベンゼン"],b:["ニトロ基","濃硝酸","濃硫酸","塩素","臭素"]},{a:["トルエン"],b:["濃硝酸","過マンガン酸カリウム"]},{a:["フェノール"],b:["濃硝酸","金属ナトリウム"]},{a:["アニリン"],b:["ジアゾ化剤","無水酢酸"]},{a:["ニトロベンゼン"],b:["還元剤","水素化ホウ素ナトリウム"]},{a:["酢酸"],b:["エタノール","水酸化ナトリウム"]},{a:["エタノール"],b:["酢酸","濃硫酸","金属ナトリウム","過マンガン酸カリウム"]},{a:["エチレン"],b:["塩素","臭素","重合触媒(Ziegler)"]},{a:["スチレン","プロピレン"],b:["重合触媒(Ziegler)"]},{a:["サリチル酸"],b:["無水酢酸"]},{a:["トリパルミチン","トリステアリン","トリオレイン","オレイン酸","酢酸エチル"],b:["水酸化ナトリウム"]},{a:["メチル基","エチル基","フェニル基","ビニル基"],b:["ヒドロキシ基","カルボキシ基","アミノ基","ニトロ基"]},{a:["ベンゼン"],b:["濃硫酸","塩素","プロピレン","水素","塩化メチル"]},{a:["ベンゼンスルホン酸"],b:["水酸化ナトリウム"]},{a:["ベンゼンスルホン酸ナトリウム"],b:["水酸化ナトリウム"]},{a:["ナトリウムフェノキシド"],b:["濃硫酸"]},{a:["フェノール"],b:["臭素","二酸化炭素","濃硝酸","塩化ベンゼンジアゾニウム"]},{a:["クメン"],b:["過マンガン酸カリウム","二クロム酸カリウム"]},{a:["クメンヒドロペルオキシド"],b:["濃硫酸"]},{a:["ニトロトルエン","ジニトロトルエン"],b:["濃硝酸"]},{a:["塩化ベンゼンジアゾニウム"],b:["フェノール"]},{a:["サリチル酸"],b:["メタノール"]},{a:["ベンズアルデヒド","ベンジルアルコール"],b:["過マンガン酸カリウム","二クロム酸カリウム"]}];
 const QUIZ_BANK=[{q:"ベンゼンのニトロ化生成物は？",opts:["ニトロベンゼン","フェノール","トルエン","アニリン"],ok:0,ex:"ニトロベンゼンです。"},{q:"エステル化の触媒は？",opts:["濃硫酸","NaOH","KMnO4","Fe"],ok:0,ex:"濃硫酸です。"},{q:"第一級アルコール酸化の最終物は？",opts:["カルボン酸","ケトン","エーテル","アルケン"],ok:0,ex:"カルボン酸です。"},{q:"第二級アルコールの酸化は？",opts:["ケトン","カルボン酸","アルデヒド","エーテル"],ok:0,ex:"ケトンです。"},{q:"油脂のけん化で出るアルコールは？",opts:["グリセリン","エタノール","メタノール","フェノール"],ok:0,ex:"グリセリンです。"},{q:"エタノールを濃硫酸で脱水すると？",opts:["エチレン","酢酸","アセトン","メタン"],ok:0,ex:"エチレンです。"},{q:"ニトロベンゼンを還元すると？",opts:["アニリン","フェノール","ベンゼン","トルエン"],ok:0,ex:"アニリンです。"},{q:"トルエンをKMnO4酸化すると？",opts:["安息香酸","フェノール","ベンゼン","ベンズアルデヒド"],ok:0,ex:"安息香酸です。"}];
 const ISOMER_BANK=[
 {q:"マレイン酸の幾何異性体は？",opts:["フマル酸","コハク酸","シュウ酸","安息香酸"],ok:0,ex:"フマル酸です。"},
@@ -736,7 +791,7 @@ Alkane:"アルカン",Alkenyl:"アルケン",Alkynyl:"アルキン",Aromatic:"�
 Aldehyde:"アルデヒド",Ketone:"ケトン",Acid:"酸",Ester:"エステル",Fat:"油脂",Phenol:"フェノール",
 Halogen:"ハロゲン",Reagent:"試薬",Base:"塩基",Metal:"金属",Oxidant:"酸化剤",Reductant:"還元剤",
 Catalyst:"触媒",Hydrocarbon:"炭化水素基",FunctionalGroup:"官能基",CisTrans:"シス・トランス",
-Nutrient:"栄養",Explosive:"爆発物",Toxin:"毒素",ORIGIN:"オリジン"
+Nutrient:"栄養",Explosive:"爆発物",Toxin:"毒素",Salt:"塩",Peroxide:"過酸化物",ORIGIN:"オリジン"
 };
 function attrLabel(a){if(!a)return '—';return ATTR_JA[a]||a;}
 const DECK_ATTR_FILTERS=['all','Aromatic','Alcohol','Acid','Ester','Alkenyl','Halogen','Reagent','Catalyst','Nutrient','FunctionalGroup','Phenol','Oxidant','ORIGIN'];
@@ -961,14 +1016,41 @@ halo:"ハロゲン化：ルイス酸触媒による芳香族求電子置換。",
 na_alc:"アルコール＋Na→アルコキシド＋水素。",
 na_ph:"フェノール＋Na→フェノキシド（酸性度がアルコールより高い）。",
 fg_oh:"炭化水素基とOHの組み合わせでアルコール/フェノール相当。",
-fg_no2:"フェニル＋ニトロ基でニトロベンゼン相当。"
+fg_no2:"フェニル＋ニトロ基でニトロベンゼン相当。",
+sulf_bz:"スルホン化：芳香族求電子置換。濃硫酸で-SO3Hを導入。",
+sulf_na:"スルホン酸の中和でナトリウム塩に。",
+alkali_fuse:"アルカリ融解：スルホン酸塩からフェノキシドへ（工業的フェノール経路）。",
+ph_free:"弱酸の遊離：フェノキシドを酸化するとフェノール。",
+picric:"フェノールのニトロ化でピクリン酸（2,4,6-トリニトロフェノール）。",
+chloro_bz:"塩素化：ルイス酸触媒による芳香族求電子置換。",
+cumene:"クメン法の第一段：ベンゼンのアルキル化。",
+cumene_ox:"クメンの酸化でヒドロペルオキシドに。",
+cumene_split:"ヒドロペルオキシドの分解でフェノールとアセトン。",
+kolbe:"コルベ・シュミット反応：フェノキシドにCO2でサリチル酸。",
+methyl_sal:"酸触媒エステル化でサリチル酸メチル（湿布の香）。",
+bromo_ph:"フェノールは臭素水で直ちにトリブロモ体（検出反応）。",
+nitro_tol_p:"トルエンのニトロ化。メチル基でオルト・パラ配向。",
+dinitro_tol:"さらにニトロ化してジニトロ体へ。",
+tnt_path:"トリニトロトルエン（TNT）までニトロ化。",
+diazo_salt:"一級芳香族アミンのジアゾ化。",
+azo_ph:"ジアゾニウムとフェノールのアゾカップリング。",
+bz_h2:"接触水素化でベンゼン→シクロヘキサン。",
+alkyl_bz:"フリーデル・クラフツアルキル化。",
+bz_ald_ox:"アルデヒドの酸化でカルボン酸。",
+bz_alc_ox:"側鎖・アルコールの酸化。",
+benzoate:"トルエン側鎖の強力酸化で安息香酸。",
+
 };
 const REACTION_PATHS=[
 {title:"芳香族アミン経路",steps:"ベンゼン →(+濃硝酸/ニトロ基)→ ニトロベンゼン →(+還元剤)→ アニリン →(+ジアゾ化剤)→ アゾベンゼン / (+無水酢酸)→ アセトアニリド"},
 {title:"エステル・けん化",steps:"酢酸 + エタノール →(濃硫酸)→ 酢酸エチル →(+NaOH)→ けん化"},
 {title:"アスピリン",steps:"サリチル酸 + 無水酢酸 → アセチルサリチル酸"},
 {title:"付加・重合",steps:"エチレン + ハロゲン → 付加 ／ オレフィン + Ziegler → 高分子"},
-{title:"酸化",steps:"1級アルコール → アルデヒド → カルボン酸 ／ トルエン + KMnO4 → 安息香酸"}
+{title:"酸化",steps:"1級アルコール → アルデヒド → カルボン酸 ／ トルエン + KMnO4 → 安息香酸"},
+{title:"フェノール経路（スルホン化）",steps:"ベンゼン →(+濃硫酸)→ ベンゼンスルホン酸 →(+NaOH)→ スルホン酸塩 →(アルカリ融解)→ フェノキシド →(+酸)→ フェノール →(+濃硝酸)→ ピクリン酸"},
+{title:"クメン法",steps:"ベンゼン+プロピレン → クメン → 酸化 → ヒドロペルオキシド → フェノール+アセトン"},
+{title:"TNT経路",steps:"トルエン → ニトロトルエン → ジニトロトルエン → TNT"},
+{title:"アニリン〜アゾ",steps:"ニトロベンゼン → アニリン → ジアゾニウム →(+フェノール)→ アゾ色素"}
 ];
 const NEWS_ITEMS=[
 {date:"2026-03",title:"アップデート v1.5",body:"セーブ強化、捨て札リシャッフル、反応ハイライト、反応解説、図鑑経路図、反応クイズ、統計・お知らせ、実験レポート、分子ビルダー改善など。"},
@@ -1065,7 +1147,24 @@ const CARD_APPEARANCE={
 "ボツリヌス毒素":{color:"—",smell:"—"},
 "ビタミンC":{color:"白色〜淡黄固体",smell:"無臭〜弱い酸味"},
 "サリチル酸メチル":{color:"無色〜淡黄",smell:"強い芳香（湿布様）"},
-"カフェイン":{color:"白色固体",smell:"無臭"}
+"カフェイン":{color:"白色固体",smell:"無臭"},
+"ベンズアルデヒド":{color:"無色〜淡黄",smell:"アーモンド様"},
+"ベンジルアルコール":{color:"無色",smell:"弱い芳香"},
+"シクロヘキサン":{color:"無色",smell:"石油臭"},
+"ベンゼンスルホン酸":{color:"白色〜淡黄",smell:"ほぼ無臭"},
+"ベンゼンスルホン酸ナトリウム":{color:"白色固体",smell:"無臭"},
+"ナトリウムフェノキシド":{color:"白色〜淡色",smell:"ほぼ無臭"},
+"クロロベンゼン":{color:"無色",smell:"芳香"},
+"クメン":{color:"無色",smell:"芳香"},
+"クメンヒドロペルオキシド":{color:"無色〜淡黄",smell:"—"},
+"ニトロトルエン":{color:"淡黄",smell:"—"},
+"ジニトロトルエン":{color:"淡黄固体",smell:"—"},
+"塩化ベンゼンジアゾニウム":{color:"—",smell:"—"},
+"p-フェニルアゾフェノール":{color:"橙〜赤",smell:"ほぼ無臭"},
+"トリブロモフェノール":{color:"白色〜淡黄",smell:"フェノール様"},
+"二酸化炭素":{color:"無色気体",smell:"無臭"},
+"水素":{color:"無色気体",smell:"無臭"},
+"塩化メチル":{color:"無色気体",smell:"甘臭"}
 };
 function getAppearance(name){
   var bn=baseName(name);
@@ -1475,7 +1574,7 @@ function molPseudoSmiles(){
 }
 function updateMolStatus(){
   var ev=evalMolecule();
-  var cost=synthCostForDamage(Math.max(50,ev.atk));
+  var cost=synthCostForDamage(Math.max(10,ev.atk||10));
   var known=matchKnownMol();
   var formula=molFormulaText();
   var smi=molPseudoSmiles();
@@ -1496,9 +1595,7 @@ function updateMolStatus(){
     notesHtml+
     (ev.open>0
       ?'<span style="color:#f87171">手が余っているためカード化不可。</span>'
-      :(ev.atk<50
-        ?'<span style="color:#fbbf24">火力不足（最低50）。官能基の追加を推奨。</span>'
-        :'<span style="color:#4ade80">完成可能 — カード化できます</span>'));
+      :'<span style="color:#4ade80">完成可能 — カード化できます</span>');
 }
 function createOriginalCard(){
   if(molAtoms.length<1){alert('原子を置いてください');return;}
@@ -1506,8 +1603,8 @@ function createOriginalCard(){
   var open=ev.open,atk=ev.atk,heal=ev.heal,parts=[];
   molAtoms.forEach(function(a){parts.push(a.sym);});
   if(open>0){alert('手が余っている状態ではカードにできません。\n余っている手: '+open+'\n結合モードでつなぐか、Hなどで埋めてください。');return;}
-  if(atk<50){alert('ダメージが弱すぎます（最低50）。\n官能基（OH, COOH, NO2 等）の追加を推奨します。\n※炭素を増やすだけではあまり強くなりません。');return;}
-  var cost=synthCostForDamage(atk);
+  if(atk<=0&&heal<=0){alert('ダメージも回復もありません。原子か官能基を追加してください。');return;}
+  var cost=synthCostForDamage(Math.max(10,atk||10));
   if(gameState.reagents<cost){alert('試薬が足りません（必要 '+cost+' / 所持 '+gameState.reagents+'）');return;}
   gameState.reagents-=cost;
   var custom=document.getElementById('orig-name').value.trim();
@@ -2020,6 +2117,29 @@ function predictReactionLabel(names){
   if((has('メチル基')||has('エチル基')||has('フェニル基'))&&has('ヒドロキシ基'))return{ok:true,label:'アルコール/フェノール生成'};
   if(has('フェニル基')&&has('ニトロ基'))return{ok:true,label:'ニトロベンゼン生成'};
   if(has('フェニル基')&&has('カルボキシ基'))return{ok:true,label:'安息香酸生成'};
+
+  if(has('ベンゼン')&&has('濃硫酸')&&!has('濃硝酸'))return{ok:true,label:'スルホン化 → ベンゼンスルホン酸'};
+  if(has('ベンゼンスルホン酸')&&has('水酸化ナトリウム'))return{ok:true,label:'中和 → スルホン酸ナトリウム'};
+  if(has('ベンゼンスルホン酸ナトリウム')&&has('水酸化ナトリウム'))return{ok:true,label:'アルカリ融解 → フェノキシド'};
+  if(has('ナトリウムフェノキシド')&&has('濃硫酸'))return{ok:true,label:'フェノール遊離'};
+  if(has('フェノール')&&has('濃硝酸'))return{ok:true,label:'ピクリン酸合成'};
+  if(has('ベンゼン')&&has('塩素')&&(has('鉄')||has('塩化アルミニウム')))return{ok:true,label:'塩素化 → クロロベンゼン'};
+  if(has('ベンゼン')&&has('プロピレン'))return{ok:true,label:'クメン合成'};
+  if(has('クメン')&&(has('過マンガン酸カリウム')||has('二クロム酸カリウム')))return{ok:true,label:'クメン酸化'};
+  if(has('クメンヒドロペルオキシド'))return{ok:true,label:'分解 → フェノール'};
+  if(has('フェノール')&&has('二酸化炭素'))return{ok:true,label:'コルベ → サリチル酸'};
+  if(has('サリチル酸')&&has('メタノール'))return{ok:true,label:'サリチル酸メチル'};
+  if(has('フェノール')&&has('臭素'))return{ok:true,label:'トリブロモフェノール'};
+  if(has('ニトロトルエン')&&has('濃硝酸'))return{ok:true,label:'ジニトロ化'};
+  if(has('ジニトロトルエン')&&has('濃硝酸'))return{ok:true,label:'TNT合成'};
+  if(has('塩化ベンゼンジアゾニウム')&&has('フェノール'))return{ok:true,label:'アゾカップリング'};
+  if(has('アニリン')&&has('ジアゾ化剤'))return{ok:true,label:'ジアゾ化 → ジアゾニウム'};
+  if(has('トルエン')&&has('濃硝酸'))return{ok:true,label:'ニトロトルエン生成'};
+  if(has('トルエン')&&has('過マンガン酸カリウム'))return{ok:true,label:'側鎖酸化 → 安息香酸'};
+  if(has('ベンゼン')&&has('水素'))return{ok:true,label:'水素化 → シクロヘキサン'};
+  if(has('ベンゼン')&&has('塩化メチル')&&has('塩化アルミニウム'))return{ok:true,label:'アルキル化'};
+  if(has('ベンズアルデヒド')&&(has('過マンガン酸カリウム')||has('二クロム酸カリウム')))return{ok:true,label:'酸化 → 安息香酸'};
+  if(has('ベンジルアルコール')&&(has('過マンガン酸カリウム')||has('二クロム酸カリウム')))return{ok:true,label:'酸化 → 安息香酸'};
   if(unique.length===1)return{ok:true,label:'単体投擲/使用（×'+n.length+'）'};
   if(n.length===0)return{ok:false,label:'カードを選択'};
   // ハイライト用ペアが成立していれば反応候補として表示
@@ -2164,7 +2284,7 @@ function executePlayerAttack(){
   else if(has(n,'1-プロパノール')&&has(n,'濃硫酸')){baseDamage=Math.floor(105*catMul);logMessage=dmgLog('脱水',baseDamage);markFlag('dehyd');isReaction=true;recipeId='dehyd';}
   else if(has(n,'ベンゼン')&&has(n,'ニトロ基')){product={name:'ニトロベンゼン',formula:'C6H5NO2',attackPower:70,healPower:0,attribute:'Aromatic',rarity:'SR'};baseDamage=Math.floor(70*catMul);logMessage=dmgLog('ニトロベンゼン',baseDamage);markFlag('nitro');isReaction=true;recipeId='nitro_grp';}
   else if(has(n,'ニトロベンゼン')&&(has(n,'還元剤')||has(n,'水素化ホウ素ナトリウム'))){product={name:'アニリン',formula:'C6H5NH2',attackPower:65,healPower:0,attribute:'Aromatic',rarity:'SR'};baseDamage=Math.floor(65*catMul);logMessage=dmgLog('還元',baseDamage);isReaction=true;recipeId='reduce_nb';}
-  else if(has(n,'アニリン')&&has(n,'ジアゾ化剤')){product={name:'アゾベンゼン',formula:'C6H5N=NC6H5',attackPower:110,healPower:0,attribute:'Aromatic',rarity:'SSR'};baseDamage=Math.floor(110*catMul);logMessage=dmgLog('アゾ',baseDamage);isReaction=true;recipeId='azo';}
+  else if(has(n,'アニリン')&&has(n,'ジアゾ化剤')){product={name:'塩化ベンゼンジアゾニウム',formula:'C6H5N2Cl',attackPower:80,healPower:0,attribute:'Aromatic',rarity:'SR'};baseDamage=Math.floor(100*catMul);logMessage=dmgLog('ジアゾ化',baseDamage);isReaction=true;recipeId='diazo_salt';}
   else if(has(n,'酢酸')&&has(n,'エタノール')){product={name:'酢酸エチル',formula:'CH3COOC2H5',attackPower:Math.floor(55*catMul),healPower:0,attribute:'Ester',rarity:'R'};baseDamage=Math.floor(55*catMul);logMessage=dmgLog('エステル化',baseDamage);markFlag('ester');isReaction=true;recipeId='ester';}
   else if(bSelected.length===1&&baseName(bSelected[0].name)==='ボツリヌス毒素'){botulinumActive=true;document.getElementById('dot-status').style.display='block';logMessage='毒素';baseDamage=0;}
   else if(bSelected.length===1&&baseName(bSelected[0].name)==='フッ化水素酸'){gameState.flags.hfUsed=true;if(Math.random()<0.1){isBattleOver=true;setBattleLog('HF自爆 試薬-25');gameState.reagents=Math.max(0,gameState.reagents-25);finalizeReplay();var spentHf=bSelected.slice();bHand=bHand.filter(function(c){return !spentHf.some(function(s){return s.id===c.id;});});spentHf.forEach(function(c){bDiscard.push(Object.assign({},c,{id:uid()}));});bSelected=[];updateBattleUI();autoSave();setTimeout(function(){gameState.playerHP=gameState.playerMaxHP;switchState('field');},1800);return;}baseDamage=Infinity;logMessage=dmgLog('HF',Infinity);checkAchievements();}
@@ -2172,11 +2292,12 @@ function executePlayerAttack(){
   else if(has(n,'水酸化ナトリウム')&&(has(n,'トリパルミチン')||has(n,'トリステアリン')||has(n,'トリオレイン'))){baseDamage=Math.floor(230*catMul);appliedEffect='sapon';logMessage=dmgLog('油脂けん化',baseDamage);markFlag('sapon');markFlag('fat');isReaction=true;recipeId='sapon_fat';}
   else if(has(n,'水酸化ナトリウム')&&(has(n,'酢酸')||has(n,'酢酸エチル')||has(n,'オレイン酸'))){baseDamage=Math.floor(210*catMul);appliedEffect='sapon';logMessage=dmgLog('けん化',baseDamage);markFlag('sapon');isReaction=true;recipeId='sapon';}
   else if(has(n,'ベンゼン')&&has(n,'濃硝酸')){baseDamage=Math.floor(130*catMul);logMessage=dmgLog('ニトロ化',baseDamage);markFlag('nitro');isReaction=true;recipeId='nitro_bz';}
-  else if(has(n,'トルエン')&&has(n,'濃硝酸')){baseDamage=Math.floor(220*catMul);logMessage=dmgLog('ニトロ化',baseDamage);markFlag('nitro');isReaction=true;recipeId='nitro_tol';}
-  else if(has(n,'フェノール')&&has(n,'濃硝酸')){baseDamage=Math.floor(150*catMul);logMessage=dmgLog('ニトロ化',baseDamage);markFlag('nitro');isReaction=true;recipeId='nitro_ph';}
-  else if(has(n,'ベンゼン')&&has(n,'濃硫酸')){baseDamage=Math.floor(150*catMul);logMessage=dmgLog('スルホン化',baseDamage);isReaction=true;recipeId='sulf';}
+  else if(has(n,'トルエン')&&has(n,'濃硝酸')){product={name:'ニトロトルエン',formula:'CH3C6H4NO2',attackPower:75,healPower:0,attribute:'Aromatic',rarity:'SR'};baseDamage=Math.floor(180*catMul);logMessage=dmgLog('ニトロトルエン生成',baseDamage);markFlag('nitro');isReaction=true;recipeId='nitro_tol_p';}
+  else if(has(n,'フェノール')&&has(n,'濃硝酸')){product={name:'ピクリン酸',formula:'C6H3N3O7',attackPower:180,healPower:0,attribute:'Explosive',rarity:'SSR'};baseDamage=Math.floor(200*catMul);logMessage=dmgLog('ピクリン酸合成',baseDamage);markFlag('nitro');isReaction=true;recipeId='picric';}
+  else if(has(n,'ベンゼン')&&has(n,'濃硫酸')&&!has(n,'濃硝酸')){product={name:'ベンゼンスルホン酸',formula:'C6H5SO3H',attackPower:55,healPower:0,attribute:'Acid',rarity:'SR'};baseDamage=Math.floor(150*catMul);logMessage=dmgLog('スルホン化',baseDamage);isReaction=true;recipeId='sulf_bz';}
   else if(has(n,'ナフタレン')&&has(n,'濃硫酸')){baseDamage=Math.floor(160*catMul);logMessage=dmgLog('スルホン化',baseDamage);isReaction=true;recipeId='sulf';}
-  else if(has(n,'ベンゼン')&&(has(n,'塩素')||has(n,'臭素'))&&(has(n,'鉄')||has(n,'塩化アルミニウム')||hasCat)){baseDamage=Math.floor(140*catMul);logMessage=dmgLog('ハロゲン化',baseDamage);isReaction=true;recipeId='halo';}
+  else if(has(n,'ベンゼン')&&has(n,'塩素')&&(has(n,'鉄')||has(n,'塩化アルミニウム')||hasCat)){product={name:'クロロベンゼン',formula:'C6H5Cl',attackPower:50,healPower:0,attribute:'Aromatic',rarity:'SR'};baseDamage=Math.floor(140*catMul);logMessage=dmgLog('塩素化',baseDamage);isReaction=true;recipeId='chloro_bz';}
+  else if(has(n,'ベンゼン')&&has(n,'臭素')&&(has(n,'鉄')||has(n,'塩化アルミニウム')||hasCat)){baseDamage=Math.floor(140*catMul);logMessage=dmgLog('ハロゲン化',baseDamage);isReaction=true;recipeId='halo';}
   else if(has(n,'エチレン')&&(has(n,'臭素')||has(n,'塩素'))){baseDamage=Math.floor(140*catMul);logMessage=dmgLog('付加',baseDamage);isReaction=true;recipeId='add_et';}
   else if(has(n,'アセチレン')&&has(n,'臭素')){baseDamage=Math.floor(160*catMul);logMessage=dmgLog('付加',baseDamage);isReaction=true;recipeId='add_et';}
   else if((has(n,'シス-2-ブテン')||has(n,'トランス-2-ブテン'))&&has(n,'臭素')){baseDamage=Math.floor(130*catMul);logMessage=dmgLog('付加',baseDamage);isReaction=true;recipeId='add_et';}
@@ -2186,7 +2307,7 @@ function executePlayerAttack(){
   else if(has(n,'ビニル基')&&has(n,'重合触媒(Ziegler)')){baseDamage=Math.floor(220*catMul);logMessage=dmgLog('重合',baseDamage);markFlag('poly');isReaction=true;recipeId='poly';}
   else if((has(n,'エタノール')||has(n,'アセトアルデヒド')||has(n,'メタノール'))&&(has(n,'過マンガン酸カリウム')||has(n,'二クロム酸カリウム'))){baseDamage=Math.floor(170*catMul);appliedEffect='oxid';logMessage=dmgLog('酸化',baseDamage);markFlag('oxid');isReaction=true;recipeId='oxid';}
   else if(has(n,'2-プロパノール')&&(has(n,'過マンガン酸カリウム')||has(n,'二クロム酸カリウム'))){baseDamage=Math.floor(160*catMul);logMessage=dmgLog('酸化',baseDamage);markFlag('oxid');isReaction=true;recipeId='oxid';}
-  else if(has(n,'トルエン')&&has(n,'過マンガン酸カリウム')){baseDamage=Math.floor(190*catMul);logMessage=dmgLog('側鎖酸化',baseDamage);markFlag('oxid');isReaction=true;recipeId='side_ox';}
+  else if(has(n,'トルエン')&&has(n,'過マンガン酸カリウム')){product={name:'安息香酸',formula:'C6H5COOH',attackPower:48,healPower:0,attribute:'Acid',rarity:'SR'};baseDamage=Math.floor(190*catMul);logMessage=dmgLog('側鎖酸化→安息香酸',baseDamage);markFlag('oxid');isReaction=true;recipeId='benzoate';}
   else if((has(n,'エタノール')||has(n,'メタノール')||has(n,'1-プロパノール'))&&has(n,'金属ナトリウム')){baseDamage=Math.floor(120*catMul);logMessage=dmgLog('アルコキシド',baseDamage);isReaction=true;recipeId='na_alc';}
   else if(has(n,'フェノール')&&has(n,'金属ナトリウム')){baseDamage=Math.floor(140*catMul);logMessage=dmgLog('フェノキシド',baseDamage);isReaction=true;recipeId='na_ph';}
   else if(has(n,'ナフタレン')&&has(n,'濃硝酸')){baseDamage=Math.floor(170*catMul);logMessage=dmgLog('ニトロ化',baseDamage);markFlag('nitro');isReaction=true;recipeId='nitro_bz';}
@@ -2196,6 +2317,22 @@ function executePlayerAttack(){
   else if(has(n,'フェニル基')&&has(n,'ヒドロキシ基')){baseDamage=Math.floor(90*catMul);logMessage=dmgLog('フェノール生成',baseDamage);isReaction=true;recipeId='fg_oh';}
   else if(has(n,'フェニル基')&&has(n,'ニトロ基')){baseDamage=Math.floor(110*catMul);logMessage=dmgLog('ニトロベンゼン生成',baseDamage);isReaction=true;recipeId='fg_no2';}
   else if(has(n,'フェニル基')&&has(n,'カルボキシ基')){baseDamage=Math.floor(100*catMul);logMessage=dmgLog('安息香酸生成',baseDamage);isReaction=true;recipeId='fg_oh';}
+  else if(has(n,'ベンゼンスルホン酸')&&has(n,'水酸化ナトリウム')){product={name:'ベンゼンスルホン酸ナトリウム',formula:'C6H5SO3Na',attackPower:50,healPower:0,attribute:'Salt',rarity:'SR'};baseDamage=Math.floor(90*catMul);logMessage=dmgLog('スルホン酸の中和',baseDamage);isReaction=true;recipeId='sulf_na';}
+  else if(has(n,'ベンゼンスルホン酸ナトリウム')&&has(n,'水酸化ナトリウム')){product={name:'ナトリウムフェノキシド',formula:'C6H5ONa',attackPower:60,healPower:0,attribute:'Phenol',rarity:'SR'};baseDamage=Math.floor(160*catMul);logMessage=dmgLog('アルカリ融解',baseDamage);isReaction=true;recipeId='alkali_fuse';}
+  else if(has(n,'ナトリウムフェノキシド')&&has(n,'濃硫酸')){product={name:'フェノール',formula:'C6H5OH',attackPower:45,healPower:0,attribute:'Phenol',rarity:'SR'};baseDamage=Math.floor(100*catMul);logMessage=dmgLog('フェノール遊離',baseDamage);isReaction=true;recipeId='ph_free';}
+  else if(has(n,'ベンゼン')&&has(n,'プロピレン')&&(has(n,'塩化アルミニウム')||has(n,'鉄')||hasCat)){product={name:'クメン',formula:'C6H5CH(CH3)2',attackPower:48,healPower:0,attribute:'Aromatic',rarity:'SR'};baseDamage=Math.floor(130*catMul);logMessage=dmgLog('クメン合成',baseDamage);isReaction=true;recipeId='cumene';}
+  else if(has(n,'クメン')&&(has(n,'過マンガン酸カリウム')||has(n,'二クロム酸カリウム'))){product={name:'クメンヒドロペルオキシド',formula:'C9H12O2',attackPower:70,healPower:0,attribute:'Peroxide',rarity:'SR'};baseDamage=Math.floor(120*catMul);logMessage=dmgLog('クメン酸化',baseDamage);markFlag('oxid');isReaction=true;recipeId='cumene_ox';}
+  else if(has(n,'クメンヒドロペルオキシド')&&(has(n,'濃硫酸')||has(n,'濃硝酸'))){product={name:'フェノール',formula:'C6H5OH',attackPower:45,healPower:0,attribute:'Phenol',rarity:'SR'};baseDamage=Math.floor(180*catMul);logMessage=dmgLog('クメン分解→フェノール',baseDamage);isReaction=true;recipeId='cumene_split';}
+  else if(has(n,'フェノール')&&has(n,'二酸化炭素')){product={name:'サリチル酸',formula:'C6H4(OH)COOH',attackPower:55,healPower:0,attribute:'Acid',rarity:'SR'};baseDamage=Math.floor(140*catMul);logMessage=dmgLog('コルベ・シュミット',baseDamage);isReaction=true;recipeId='kolbe';}
+  else if(has(n,'サリチル酸')&&has(n,'メタノール')){product={name:'サリチル酸メチル',formula:'C8H8O3',attackPower:85,healPower:40,attribute:'Ester',rarity:'SSR'};baseDamage=Math.floor(110*catMul);logMessage=dmgLog('サリチル酸メチル',baseDamage);markFlag('ester');isReaction=true;recipeId='methyl_sal';}
+  else if(has(n,'フェノール')&&has(n,'臭素')){product={name:'トリブロモフェノール',formula:'C6H3Br3OH',attackPower:95,healPower:0,attribute:'Phenol',rarity:'SR'};baseDamage=Math.floor(150*catMul);logMessage=dmgLog('トリブロモ化',baseDamage);isReaction=true;recipeId='bromo_ph';}
+  else if(has(n,'ニトロトルエン')&&has(n,'濃硝酸')){product={name:'ジニトロトルエン',formula:'CH3C6H3(NO2)2',attackPower:120,healPower:0,attribute:'Aromatic',rarity:'SSR'};baseDamage=Math.floor(200*catMul);logMessage=dmgLog('ジニトロ化',baseDamage);markFlag('nitro');isReaction=true;recipeId='dinitro_tol';}
+  else if(has(n,'ジニトロトルエン')&&has(n,'濃硝酸')){product={name:'トリニトロトルエン',formula:'C7H5N3O6',attackPower:180,healPower:0,attribute:'Explosive',rarity:'SSR'};baseDamage=Math.floor(250*catMul);logMessage=dmgLog('TNT合成',baseDamage);markFlag('nitro');isReaction=true;recipeId='tnt_path';}
+  else if(has(n,'塩化ベンゼンジアゾニウム')&&has(n,'フェノール')){product={name:'p-フェニルアゾフェノール',formula:'HOC6H4N=NC6H5',attackPower:115,healPower:0,attribute:'Aromatic',rarity:'SSR'};baseDamage=Math.floor(160*catMul);logMessage=dmgLog('アゾカップリング',baseDamage);isReaction=true;recipeId='azo_ph';}
+  else if(has(n,'ベンゼン')&&has(n,'水素')&&(has(n,'鉄')||has(n,'塩化アルミニウム')||hasCat)){product={name:'シクロヘキサン',formula:'C6H12',attackPower:28,healPower:0,attribute:'Alkane',rarity:'R'};baseDamage=Math.floor(100*catMul);logMessage=dmgLog('水素化',baseDamage);isReaction=true;recipeId='bz_h2';}
+  else if(has(n,'ベンゼン')&&has(n,'塩化メチル')&&has(n,'塩化アルミニウム')){baseDamage=Math.floor(130*catMul);logMessage=dmgLog('アルキル化',baseDamage);isReaction=true;recipeId='alkyl_bz';}
+  else if(has(n,'ベンズアルデヒド')&&(has(n,'過マンガン酸カリウム')||has(n,'二クロム酸カリウム'))){product={name:'安息香酸',formula:'C6H5COOH',attackPower:48,healPower:0,attribute:'Acid',rarity:'SR'};baseDamage=Math.floor(140*catMul);logMessage=dmgLog('アルデヒド酸化',baseDamage);markFlag('oxid');isReaction=true;recipeId='bz_ald_ox';}
+  else if(has(n,'ベンジルアルコール')&&(has(n,'過マンガン酸カリウム')||has(n,'二クロム酸カリウム'))){product={name:'安息香酸',formula:'C6H5COOH',attackPower:48,healPower:0,attribute:'Acid',rarity:'SR'};baseDamage=Math.floor(150*catMul);logMessage=dmgLog('アルコール酸化',baseDamage);markFlag('oxid');isReaction=true;recipeId='bz_alc_ox';}
   else if(unique.length===1){
     var s=bSelected[0],cnt=bSelected.length;
     if(baseName(s.name)==='ボツリヌス毒素'){botulinumActive=true;document.getElementById('dot-status').style.display='block';logMessage='毒素';baseDamage=0;}
@@ -2258,20 +2395,41 @@ function applyEffectAndEndTurn(damage,heal,message,isWeak){
 }
 function endPlayerTurn(){if(isBattleOver)return;if(isPractice){startPlayerTurn(false);return;}isPlayerTurn=false;isProcessing=true;setBattleLog('敵の攻撃…');updateBattleUI();setTimeout(function(){if(isBattleOver)return;if(monsterHP>0){var atk=gameState.currentMonster.attackPower||15;if(bossTurnLimit>0&&battleTurnCount>=bossTurnLimit-2)atk=Math.floor(atk*1.5);gameState.playerHP-=atk;document.getElementById('battle-player-hp').innerText=Math.max(0,gameState.playerHP);setBattleLog('敵の攻撃\nあなたに '+atk+' ダメージ！');if(gameState.playerHP<=0){isBattleOver=true;gameState.playerHP=0;gameState.reagents=Math.max(0,gameState.reagents-25);gameState.flags.losses=(gameState.flags.losses||0)+1;setBattleLog('敗北 試薬-25');finalizeReplay();autoSave();setTimeout(function(){gameState.playerHP=gameState.playerMaxHP;switchState('field');},1400);return;}setTimeout(function(){if(!isBattleOver)startPlayerTurn(false);},1100);}else if(!isBattleOver)startPlayerTurn(false);},800);}
 
-function sortDeck(mode){var names=[],seen={};gameState.collection.forEach(function(c){if(!seen[c.name]){seen[c.name]=1;names.push(c.name);}});function rep(name){return gameState.collection.find(function(c){return c.name===name;})||ALL_CARDS.find(function(c){return c.name===baseName(name);});}names.sort(function(a,b){var ca=rep(a),cb=rep(b);if(!ca||!cb)return 0;if(mode==='name')return a.localeCompare(b,'ja');if(mode==='rarity'){var d=(RARITY_ORDER[ca.rarity]||9)-(RARITY_ORDER[cb.rarity]||9);return d||a.localeCompare(b,'ja');}if(mode==='power'){var d2=powerValue(cb)-powerValue(ca);return d2||a.localeCompare(b,'ja');}return a.localeCompare(b,'ja');});gameState.deckListOrder=names.slice();var rebuilt=[];names.forEach(function(name){gameState.currentDeck.filter(function(c){return c.name===name;}).forEach(function(c){rebuilt.push(c);});});gameState.currentDeck=rebuilt;renderDeckEdit();}
-function renderDeckAttrFilters(){
-  var sel=document.getElementById('deck-attr-select');
-  if(sel){
-    var cur=deckAttrFilter||'all';
-    sel.innerHTML='';
-    DECK_ATTR_FILTERS.forEach(function(a){
-      var o=document.createElement('option');
-      o.value=a;o.innerText=a==='all'?'属性: 全て':('属性: '+attrLabel(a));
-      if(a===cur)o.selected=true;
-      sel.appendChild(o);
-    });
-  }
-  var box=document.getElementById('deck-attr-filters');if(box)box.innerHTML='';
+function onDeckSearch(){
+  var el=document.getElementById('deck-search');
+  deckSearchQuery=el?String(el.value).trim():'';
+  renderDeckEdit();
+}
+function onDeckSortChange(){
+  var el=document.getElementById('deck-sort-select');
+  if(!el)return;
+  sortDeck(el.value||'name');
+}
+function onDeckAttrChange(){
+  var el=document.getElementById('deck-attr-select');
+  deckAttrFilter=el?el.value:'all';
+  renderDeckEdit();
+}
+function openReactMemoModal(){
+  var el=document.getElementById('deck-reaction-list');
+  if(el)el.innerText=FULL_REACTION_TEXT;
+  var m=document.getElementById('react-memo-modal');
+  if(m)m.style.display='block';
+}
+function closeReactMemoModal(){var m=document.getElementById('react-memo-modal');if(m)m.style.display='none';}
+function sortDeck(mode){
+  var names=[],seen={};
+  gameState.collection.forEach(function(c){if(!seen[c.name]){seen[c.name]=1;names.push(c.name);}});
+  function rep(name){return gameState.collection.find(function(c){return c.name===name;})||ALL_CARDS.find(function(c){return c.name===baseName(name);});}
+  names.sort(function(a,b){
+    var ca=rep(a),cb=rep(b);if(!ca||!cb)return String(a).localeCompare(String(b),'ja');
+    if(mode==='name')return a.localeCompare(b,'ja');
+    if(mode==='rarity'){var d=(RARITY_ORDER[ca.rarity]||9)-(RARITY_ORDER[cb.rarity]||9);return d||a.localeCompare(b,'ja');}
+    if(mode==='power'){var d2=powerValue(cb)-powerValue(ca);return d2||a.localeCompare(b,'ja');}
+    return a.localeCompare(b,'ja');
+  });
+  gameState.deckListOrder=names.slice();
+  renderDeckEdit();
 }
 function renameOriginCard(oldName){
   if(gameState.reagents<25){alert('試薬が足りません（25必要）');return;}
