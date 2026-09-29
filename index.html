@@ -252,7 +252,8 @@ body,html{width:100%;height:100%;overflow:hidden;background:#05080f;color:#e8eef
       <div id="boss-deck-check" class="deck-check"></div>
     </div>
   </div>
-  <div class="boss-actions">
+  <div class="boss-actions" style="flex-wrap:wrap;gap:8px;justify-content:center">
+    <button type="button" class="glass-btn success wide" onclick="autoDeckForBoss()">弱点・条件に合わせて自動編成</button>
     <button type="button" class="glass-btn danger" onclick="cancelBossPrep()">やめる</button>
     <button type="button" class="glass-btn orange" onclick="confirmBossBattle()">戦う</button>
     <button type="button" class="glass-btn primary" onclick="goBossDeckEdit()">デッキ編集</button>
@@ -408,11 +409,14 @@ body,html{width:100%;height:100%;overflow:hidden;background:#05080f;color:#e8eef
   </div>
   <div class="filter-row" style="align-items:center">
     <input id="deck-search" class="search-input" placeholder="名前検索" oninput="onDeckSearch()" onkeyup="onDeckSearch()" onchange="onDeckSearch()">
-    <select id="deck-sort-select" class="ui-select" onchange="onDeckSortChange()">
+    <select id="deck-sort-select" class="ui-select" onchange="onDeckSortChange()" oninput="onDeckSortChange()">
       <option value="name">並び: 名前</option>
       <option value="rarity">並び: レア</option>
       <option value="power">並び: 火力</option>
     </select>
+    <button type="button" class="glass-btn mini-btn slate" onclick="sortDeck('name')">名前</button>
+    <button type="button" class="glass-btn mini-btn slate" onclick="sortDeck('rarity')">レア</button>
+    <button type="button" class="glass-btn mini-btn slate" onclick="sortDeck('power')">火力</button>
     <select id="deck-attr-select" class="ui-select" onchange="onDeckAttrChange()">
       <option value="all">属性: 全て</option>
     </select>
@@ -905,7 +909,7 @@ var gameState={
 };
 var returnToMenu=false,menuOpen=false,isBattleOver=false,isProcessing=false,botulinumActive=false,isPractice=false,gachaBusy=false;
 var pendingIntermediate=null,fromBattleToHistory=false,returnToBossPrep=false;
-var battleHistory=[],battleTurnCount=0,bossTurnLimit=0,comboCount=0,zukanFilter='all',deckAttrFilter='all',deckSearchQuery='',zukanSearchQuery='';
+var battleHistory=[],battleTurnCount=0,bossTurnLimit=0,comboCount=0,zukanFilter='all',deckAttrFilter='all',deckSearchQuery='',zukanSearchQuery='',deckSortMode='name';
 var battleUsedCatalyst=false,battleBigSpend=false,battleAttrsUsed={},battleOriginCount=0;
 var qoScore=0,qoTotal=0,isoScore=0,isoStreak=0;
 var bDeck=[],bHand=[],bDiscard=[],bSelected=[],monsterHP=500,isPlayerTurn=true;var battleReactionsUsed=[];var tutIndex=0;var lastSpendBoom=0;
@@ -1421,6 +1425,61 @@ function goBossDeckEdit(){
   switchState('deckEdit');
 }
 
+function autoDeckForBoss(){
+  var m=gameState.currentMonster;
+  if(!m){alert('ボス情報なし');return;}
+  if(!gameState.collection.length){alert('所持カードがありません');return;}
+  var weak=m.weakness||[];
+  var cond=m.condition||null;
+  var focus=[];
+  weak.forEach(function(a){if(focus.indexOf(a)<0)focus.push(a);});
+  if(cond&&focus.indexOf(cond)<0)focus.push(cond);
+  var owned={};gameState.collection.forEach(function(c){owned[c.name]=(owned[c.name]||0)+1;});
+  var used={};
+  function pick(name){if((used[name]||0)>=(owned[name]||0))return false;used[name]=(used[name]||0)+1;return true;}
+  function total(){var s=0;for(var k in used)s+=used[k];return s;}
+  var MAX=50;
+  function cardOf(name){return gameState.collection.find(function(c){return c.name===name;});}
+  function scoreName(name){
+    var c=cardOf(name);if(!c)return -1;
+    var s=powerValue(c);
+    if(focus.indexOf(c.attribute)>=0)s+=500;
+    if(cond&&c.attribute===cond)s+=250;
+    if(weak.indexOf(c.attribute)>=0)s+=200;
+    if(['Reagent','Catalyst','Oxidant','Reductant','Halogen','Base','Metal'].indexOf(c.attribute)>=0)s+=80;
+    if(c.rarity==='SSSR')s+=60;else if(c.rarity==='SSR')s+=40;else if(c.rarity==='SR')s+=15;
+    return s;
+  }
+  // 1) focus attributes first
+  Object.keys(owned).sort(function(a,b){return scoreName(b)-scoreName(a);}).forEach(function(name){
+    var c=cardOf(name);if(!c)return;
+    if(focus.length&&focus.indexOf(c.attribute)<0)return;
+    while(total()<MAX&&pick(name)){}
+  });
+  // 2) fill with high score remaining (support/power)
+  Object.keys(owned).sort(function(a,b){return scoreName(b)-scoreName(a);}).forEach(function(name){
+    while(total()<MAX&&pick(name)){}
+  });
+  // ensure at least 20 if possible
+  if(total()<20){
+    Object.keys(owned).forEach(function(name){while(total()<20&&pick(name)){};});
+  }
+  var newDeck=[];
+  for(var name in used){
+    var need=used[name];
+    for(var i=0;i<gameState.collection.length&&need>0;i++){
+      if(gameState.collection[i].name===name){newDeck.push(Object.assign({},gameState.collection[i],{id:uid()}));need--;}
+    }
+  }
+  gameState.currentDeck=newDeck;
+  try{autoSave();}catch(e){}
+  updateBossDeckCheck(m);
+  var focusLab=focus.length?focus.map(attrLabel).join(' / '):'指定なし';
+  alert('ボス向けデッキを自動編成しました\\n枚数: '+newDeck.length+'\\n優先属性: '+focusLab);
+}
+
+
+
 /* ===== 分子ビルダー ===== */
 function initMolBuilder(){
   document.getElementById('synth-reagents').innerText=gameState.reagents;
@@ -1654,8 +1713,9 @@ function renderGachaTypes(){
     div.innerHTML='<h4>'+g.name+'（試薬 '+g.cost+'）</h4><p>'+g.desc+'</p><p style="color:#67e8f9">内訳: '+poolText+'</p><p class="gacha-rate">排出目安: '+formatGachaRates(g)+'</p>';
     var row=document.createElement('div');row.className='gacha-actions';
     var listBtn=document.createElement('button');listBtn.type='button';listBtn.className='glass-btn slate';listBtn.innerText='一覧';listBtn.onclick=function(){showPoolModal(g);};
-    var pullBtn=document.createElement('button');pullBtn.type='button';pullBtn.className='glass-btn pink';pullBtn.innerText='引く（'+g.cost+'）';pullBtn.onclick=function(){drawGachaType(g.id);};
-    row.appendChild(listBtn);row.appendChild(pullBtn);div.appendChild(row);box.appendChild(div);
+    var pullBtn=document.createElement('button');pullBtn.type='button';pullBtn.className='glass-btn pink';pullBtn.innerText='1回（'+g.cost+'）';pullBtn.onclick=function(){drawGachaType(g.id,1);};
+    var multiBtn=document.createElement('button');multiBtn.type='button';multiBtn.className='glass-btn primary';multiBtn.innerText='十連（'+(g.cost*10)+'）';multiBtn.onclick=function(){drawGachaType(g.id,10);};
+    row.appendChild(listBtn);row.appendChild(pullBtn);row.appendChild(multiBtn);div.appendChild(row);box.appendChild(div);
   });
 }
 function convertDuplicates(mode){
@@ -1681,23 +1741,42 @@ function convertDuplicates(mode){
 }
 function showPoolModal(g){var pool=g.pool().slice().sort(function(a,b){var d=(RARITY_ORDER[a.rarity]||9)-(RARITY_ORDER[b.rarity]||9);return d||a.name.localeCompare(b.name,'ja');});document.getElementById('pool-title').innerText=g.name+' 排出一覧';var html='';pool.forEach(function(c){var p=c.name==='ボツリヌス毒素'?'毎ターン200ダメージ':(c.attackPower===Infinity?'∞ダメージ':(c.attackPower||0)+'ダメージ');if((c.healPower||0)>0)p+=' / '+c.healPower+'回復';html+='<div class="pool-line"><span><span class="card-rarity rarity-'+c.rarity+'">'+c.rarity+'</span> '+c.name+'</span><span style="color:#fbbf24">'+p+'</span></div>';});document.getElementById('pool-body').innerHTML=html;document.getElementById('pool-modal').style.display='block';}
 function closePoolModal(){document.getElementById('pool-modal').style.display='none';}
-function drawGachaType(id){
-  if(gachaBusy)return;var g=GACHA_TYPES.find(function(x){return x.id===id;});if(!g)return;
-  if(gameState.reagents<g.cost){alert('試薬不足');return;}
-  gameState.reagents-=g.cost;document.getElementById('gacha-reagents').innerText=gameState.reagents;
-  gachaBusy=true;var res=document.getElementById('gacha-result');res.classList.remove('reveal');res.classList.add('rolling');
-  res.innerHTML='<div style="font-size:14px;color:#e879f9">合成中…</div><div style="font-size:28px;margin-top:8px">⚗️</div>';
-  var ticks=0;var iv=setInterval(function(){ticks++;var flash=g.pool()[Math.floor(Math.random()*g.pool().length)];res.innerHTML='<div style="font-size:11px;opacity:.7">'+g.name+'</div><div style="font-size:15px;margin-top:8px">'+flash.name+'</div>';if(ticks>=12){clearInterval(iv);res.classList.remove('rolling');finishGachaPull(g,res);}},80);
+function drawGachaType(id,times){
+  if(gachaBusy)return;
+  times=times||1;
+  if(times<1)times=1;
+  var g=GACHA_TYPES.find(function(x){return x.id===id;});if(!g)return;
+  var totalCost=g.cost*times;
+  if(gameState.reagents<totalCost){alert('試薬不足（必要 '+totalCost+' / 所持 '+gameState.reagents+'）');return;}
+  gameState.reagents-=totalCost;document.getElementById('gacha-reagents').innerText=gameState.reagents;
+  gachaBusy=true;var res=document.getElementById('gacha-result');res.classList.remove('reveal','rare-ssr','rare-sssr');res.classList.add('rolling');
+  res.innerHTML='<div style="font-size:14px;color:#e879f9">'+(times>=10?'十連合成中…':'合成中…')+'</div><div style="font-size:28px;margin-top:8px">⚗️</div>';
+  var ticks=0;var iv=setInterval(function(){
+    ticks++;
+    var flash=g.pool()[Math.floor(Math.random()*g.pool().length)];
+    res.innerHTML='<div style="font-size:11px;opacity:.7">'+g.name+(times>=10?' ×10':'')+'</div><div style="font-size:15px;margin-top:8px">'+flash.name+'</div>';
+    if(ticks>=12){clearInterval(iv);res.classList.remove('rolling');if(times>=10)finishGachaMulti(g,res,times);else finishGachaPull(g,res);}
+  },80);
 }
-function finishGachaPull(g,res){
+function rollOneGachaCard(g){
   var boost=getRank().gachaBoost+getLabGachaBoost(),rates=g.rates(boost),rand=Math.random()*100,rarity='R',order=['SSSR','SSR','SR','R'];
   for(var i=0;i<order.length;i++){if(rates[order[i]]==null)continue;if(rand<rates[order[i]]){rarity=order[i];break;}}
   var pool=g.pool().filter(function(c){return c.rarity===rarity;});if(!pool.length)pool=g.pool();
   var pulled=pool[Math.floor(Math.random()*pool.length)];var newCard=Object.assign({},pulled,{id:uid()});
-  gameState.collection.push(newCard);gameState.flags.gachaCount=(gameState.flags.gachaCount||0)+1;saveGame(true);checkAchievements();
-  var val;if(newCard.name==='ボツリヌス毒素')val='毎ターン200ダメージ';else if(newCard.attackPower===Infinity)val='∞ダメージ';
-  else if((newCard.attackPower||0)>0&&(newCard.healPower||0)>0)val=newCard.attackPower+'ダメージ / '+newCard.healPower+'回復';
-  else if(newCard.healPower>0)val=newCard.healPower+'回復';else val=(newCard.attackPower||0)+'ダメージ';
+  gameState.collection.push(newCard);gameState.flags.gachaCount=(gameState.flags.gachaCount||0)+1;
+  return newCard;
+}
+function gachaCardPowerText(newCard){
+  if(newCard.name==='ボツリヌス毒素')return '毎ターン200ダメージ';
+  if(newCard.attackPower===Infinity)return '∞ダメージ';
+  if((newCard.attackPower||0)>0&&(newCard.healPower||0)>0)return newCard.attackPower+'ダメージ / '+newCard.healPower+'回復';
+  if(newCard.healPower>0)return newCard.healPower+'回復';
+  return (newCard.attackPower||0)+'ダメージ';
+}
+function finishGachaPull(g,res){
+  var newCard=rollOneGachaCard(g);
+  saveGame(true);checkAchievements();
+  var val=gachaCardPowerText(newCard);
   var app=getAppearance(newCard.name);var hint='';var bn=baseName(newCard.name);if(CARD_REACT_FULL[bn]){hint=CARD_REACT_FULL[bn].split('\n')[0];}
   var ownedN=gameState.collection.filter(function(c){return c.name===newCard.name;}).length;
   var newTag=ownedN<=1?'<span style="color:#4ade80;font-size:11px">NEW</span>':'<span style="color:#94a3b8;font-size:11px">'+ownedN+'枚目</span>';
@@ -1715,6 +1794,34 @@ function finishGachaPull(g,res){
     +'<div style="font-size:11px;color:#a5b4fc;margin-top:4px">色: '+app.color+'</div>'
     +'<div style="font-size:11px;color:#a5b4fc">匂い: '+app.smell+'</div>'
     +(hint?'<div style="font-size:10px;color:#94a3b8;margin-top:4px;line-height:1.4;max-width:100%">'+hint+'</div>':'');
+  gachaBusy=false;
+}
+function finishGachaMulti(g,res,times){
+  var cards=[];
+  for(var i=0;i<times;i++)cards.push(rollOneGachaCard(g));
+  saveGame(true);checkAchievements();
+  var best='R',orderRank={SSSR:0,SSR:1,SR:2,R:3};
+  cards.forEach(function(c){if((orderRank[c.rarity]||9)<(orderRank[best]||9))best=c.rarity;});
+  res.classList.remove('rare-ssr','rare-sssr','reveal','rolling');
+  var rareBanner='';
+  if(best==='SSSR'){res.classList.add('rare-sssr');rareBanner='<div class="gacha-rare-banner sssr">✦ 十連に SSSR ✦</div>';}
+  else if(best==='SSR'){res.classList.add('rare-ssr');rareBanner='<div class="gacha-rare-banner ssr">★ 十連に SSR ★</div>';}
+  else{res.classList.add('reveal');}
+  var counts={};cards.forEach(function(c){counts[c.rarity]=(counts[c.rarity]||0)+1;});
+  var sumLine=['SSSR','SSR','SR','R'].filter(function(r){return counts[r];}).map(function(r){return r+'×'+counts[r];}).join(' / ');
+  var lines='';
+  cards.forEach(function(c,idx){
+    var ownedN=gameState.collection.filter(function(x){return x.name===c.name;}).length;
+    var tag=ownedN<=1?'<span style="color:#4ade80">NEW</span>':'×'+ownedN;
+    lines+='<div style="display:flex;justify-content:space-between;gap:6px;padding:3px 0;border-bottom:1px solid rgba(148,163,184,.15);font-size:12px;text-align:left">'
+      +'<span><span class="card-rarity rarity-'+c.rarity+'">'+c.rarity+'</span> '+c.name+'</span>'
+      +'<span style="color:#94a3b8;white-space:nowrap">'+tag+'</span></div>';
+  });
+  res.style.minHeight='280px';
+  res.innerHTML=rareBanner
+    +'<div style="font-size:12px;color:#94a3b8;margin-bottom:4px">'+g.name+' 十連結果</div>'
+    +'<div style="font-size:11px;color:#fbbf24;margin-bottom:6px">'+sumLine+'</div>'
+    +'<div style="width:100%;max-height:220px;overflow-y:auto;text-align:left">'+lines+'</div>';
   gachaBusy=false;
 }
 
@@ -2422,18 +2529,36 @@ function openReactMemoModal(){
   if(m)m.style.display='block';
 }
 function closeReactMemoModal(){var m=document.getElementById('react-memo-modal');if(m)m.style.display='none';}
+function deckCardRep(name){
+  return gameState.collection.find(function(c){return c.name===name;})||ALL_CARDS.find(function(c){return c.name===baseName(name);})||{name:name,rarity:'R',attackPower:0};
+}
+function compareDeckNames(a,b,mode){
+  var ca=deckCardRep(a),cb=deckCardRep(b);
+  mode=mode||deckSortMode||'name';
+  if(mode==='rarity'){
+    var d=(RARITY_ORDER[ca.rarity]||9)-(RARITY_ORDER[cb.rarity]||9);
+    return d||String(a).localeCompare(String(b),'ja');
+  }
+  if(mode==='power'){
+    var d2=powerValue(cb)-powerValue(ca);
+    return d2||String(a).localeCompare(String(b),'ja');
+  }
+  return String(a).localeCompare(String(b),'ja');
+}
+function sortDeckNamesList(names,mode){
+  mode=mode||deckSortMode||'name';
+  return names.slice().sort(function(a,b){return compareDeckNames(a,b,mode);});
+}
 function sortDeck(mode){
+  if(!mode)mode='name';
+  deckSortMode=mode;
+  var sel=document.getElementById('deck-sort-select');
+  if(sel){try{sel.value=mode;}catch(e){}}
   var names=[],seen={};
   gameState.collection.forEach(function(c){if(!seen[c.name]){seen[c.name]=1;names.push(c.name);}});
-  function rep(name){return gameState.collection.find(function(c){return c.name===name;})||ALL_CARDS.find(function(c){return c.name===baseName(name);});}
-  names.sort(function(a,b){
-    var ca=rep(a),cb=rep(b);if(!ca||!cb)return String(a).localeCompare(String(b),'ja');
-    if(mode==='name')return a.localeCompare(b,'ja');
-    if(mode==='rarity'){var d=(RARITY_ORDER[ca.rarity]||9)-(RARITY_ORDER[cb.rarity]||9);return d||a.localeCompare(b,'ja');}
-    if(mode==='power'){var d2=powerValue(cb)-powerValue(ca);return d2||a.localeCompare(b,'ja');}
-    return a.localeCompare(b,'ja');
-  });
+  names=sortDeckNamesList(names,mode);
   gameState.deckListOrder=names.slice();
+  try{autoSave();}catch(e){}
   renderDeckEdit();
 }
 function renameOriginCard(oldName){
@@ -2470,7 +2595,10 @@ function renderDeckEdit(){
   document.getElementById('preset-labels').innerText=[0,1,2].map(function(i){var s=gameState.deckSlots[i];return(s&&s.cards&&s.cards.length)?('S'+(i+1)+':'+(s.name||'無題')+'('+s.cards.length+')'):('S'+(i+1)+':空');}).join(' / ');
   var syn=calcSynthRate();document.getElementById('synth-rate-text').innerText=syn.rate+'% 回復'+syn.healCount;document.getElementById('synth-rate-bar').style.width=syn.rate+'%';document.getElementById('synth-hint').innerText=syn.missing.length?'不足: '+syn.missing.join(' / '):'';
   var allNames=[],seen={};gameState.collection.forEach(function(c){if(!seen[c.name]){seen[c.name]=1;allNames.push(c.name);}});
-  var ordered;if(gameState.deckListOrder&&gameState.deckListOrder.length){ordered=gameState.deckListOrder.filter(function(n){return seen[n];});allNames.filter(function(n){return ordered.indexOf(n)<0;}).sort(function(a,b){return a.localeCompare(b,'ja');}).forEach(function(n){ordered.push(n);});}else ordered=allNames.sort(function(a,b){return a.localeCompare(b,'ja');});
+  var ordered=sortDeckNamesList(allNames,deckSortMode||'name');
+  gameState.deckListOrder=ordered.slice();
+  var selSort=document.getElementById('deck-sort-select');
+  if(selSort){try{selSort.value=deckSortMode||'name';}catch(e){}}
   if(deckAttrFilter!=='all'){
     ordered=ordered.filter(function(name){
       var card=gameState.collection.find(function(c){return c.name===name;});
